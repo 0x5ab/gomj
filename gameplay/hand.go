@@ -83,6 +83,15 @@ type Hand struct {
 	DrawsAfterRiichi int
 }
 
+func NewHand(g *Game, p *Player) *Hand {
+	return &Hand{
+		Game:   g,
+		Player: p,
+		Tiles:  []tiles.Tile{},
+		Fulu:   []Fulu{},
+	}
+}
+
 func (h *Hand) String() string {
 	return fmt.Sprintf("%v %v", h.Tiles, h.Fulu)
 }
@@ -129,6 +138,66 @@ func (h *Hand) GetChiCount() int {
 
 func (h *Hand) GetFuluCount() int {
 	return h.GetPengCount() + h.GetGangCount() + h.GetChiCount()
+}
+
+func (h *Hand) GetPengTiles() []tiles.Tile {
+	var tiles []tiles.Tile
+	for _, f := range h.Fulu {
+		if f.IsPeng() {
+			tiles = append(tiles, f.StartTile)
+		}
+	}
+	return tiles
+}
+
+func (h *Hand) GetGangTiles() []tiles.Tile {
+	var tiles []tiles.Tile
+	for _, f := range h.Fulu {
+		if f.IsGang() {
+			tiles = append(tiles, f.StartTile)
+		}
+	}
+	return tiles
+}
+
+func (h *Hand) GetMingGangTiles() []tiles.Tile {
+	var tiles []tiles.Tile
+	for _, f := range h.Fulu {
+		if f.IsGang() && !f.IsAnGang() {
+			tiles = append(tiles, f.StartTile)
+		}
+	}
+	return tiles
+}
+
+func (h *Hand) GetAnGangTiles() []tiles.Tile {
+	var tiles []tiles.Tile
+	for _, f := range h.Fulu {
+		if f.IsAnGang() {
+			tiles = append(tiles, f.StartTile)
+		}
+	}
+	return tiles
+}
+
+func (h *Hand) GetKeZiTiles() []tiles.Tile {
+	var tiles []tiles.Tile
+	for _, f := range h.Fulu {
+		if f.IsPeng() || f.IsGang() {
+			tiles = append(tiles, f.StartTile)
+		}
+	}
+	return tiles
+}
+
+func (h *Hand) GetChiTiles() []tiles.Tile {
+	var tiles []tiles.Tile
+	for _, f := range h.Fulu {
+		if f.IsChi() {
+			tiles = append(tiles, f.StartTile)
+		}
+	}
+	return tiles
 }
 
 func (h *Hand) IsMenQing() bool {

@@ -101,6 +101,10 @@ func (t Tile) IsFeng() bool {
 	return t.TileType == Zi && t.Number <= 4
 }
 
+func (t Tile) Equal(t2 Tile) bool {
+	return t.Id == t2.Id
+}
+
 func (t Tile) String() string {
 	return fmt.Sprintf("%d%c", t.Number, t.TileType)
 }
@@ -134,6 +138,10 @@ func (t Tile) HumanReadableString() string {
 	return ""
 }
 
+func (t Tile) Ptr() *Tile {
+	return &t
+}
+
 func GetTile(t TileType, number int) (Tile, error) {
 	if number < 1 || number > 9 {
 		return Invalid, errors.ErrInvalidTile
@@ -164,6 +172,14 @@ func GetTile(t TileType, number int) (Tile, error) {
 		}
 	}
 	return Invalid, errors.ErrInvalidTile
+}
+
+func GetTileP(t TileType, number int) Tile {
+	tile, err := GetTile(t, number)
+	if err != nil {
+		panic(err)
+	}
+	return tile
 }
 
 func ParseTile(t string) (Tile, error) {

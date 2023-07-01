@@ -86,14 +86,14 @@ func (j *JapaneseMahjongYiZhongRuleset) GetAllYiZhongs() []ruleset.YiZhong {
 	return yiZhongs
 }
 
-func (j *JapaneseMahjongYiZhongRuleset) Check(huWay *ruleset.HuWay, hand *gameplay.Hand, gotTile *gameplay.GameTile) []ruleset.YiZhong {
+func (j *JapaneseMahjongYiZhongRuleset) Check(huWay *ruleset.HuWay) []ruleset.YiZhong {
 	var yiZhongs []ruleset.YiZhong
-	isMenQing := hand.IsMenQing()
+	isMenQing := huWay.Hand.IsMenQing()
 	for _, y := range j.YiZhongs {
 		if !isMenQing && y.NeedMenQing() {
 			continue
 		}
-		if y.IsYiZhong(huWay, hand, gotTile) {
+		if y.IsYiZhong(huWay) {
 			yiZhongs = append(yiZhongs, y)
 		}
 	}
@@ -104,7 +104,7 @@ func (j *JapaneseMahjongYiZhongRuleset) Check(huWay *ruleset.HuWay, hand *gamepl
 }
 
 var (
-	YiZhongRuleset = JapaneseMahjongYiZhongRuleset{
+	YakuShuRuleset = &JapaneseMahjongYiZhongRuleset{
 		YiZhongs: []JapaneseMahjongYiZhong{
 			&RiiChi{},
 			&Ippatsu{},
@@ -114,6 +114,7 @@ var (
 			&SanSeTongShun{},
 			&SanSeTongKe{},
 			&PinHu{},
+			&YiBeiKou{},
 			&QingYiSe{},
 			&ShiSanYao{},
 			&ShiSanYaoDanJi{},
@@ -152,8 +153,8 @@ func (r *RiiChi) GetDescription() string {
 	return "立直"
 }
 
-func (r *RiiChi) IsYiZhong(huWay *ruleset.HuWay, hand *gameplay.Hand, gotTile *gameplay.GameTile) bool {
-	return hand.IsRiichi
+func (r *RiiChi) IsYiZhong(huWay *ruleset.HuWay) bool {
+	return huWay.IsRiichi()
 }
 
 // #endregion
@@ -186,8 +187,8 @@ func (i *Ippatsu) GetDescription() string {
 	return "玩家立直后，自己摸入的第一只牌即自摸胡，或者在这之间食胡他人打出的牌。但中途遇上其他玩家鸣牌则无效。又称“即”，部分竞技麻雀不采用此规则。"
 }
 
-func (i *Ippatsu) IsYiZhong(huWay *ruleset.HuWay, hand *gameplay.Hand, gotTile *gameplay.GameTile) bool {
-	return hand.DrawsAfterRiichi == 1
+func (i *Ippatsu) IsYiZhong(huWay *ruleset.HuWay) bool {
+	return huWay.Hand.DrawsAfterRiichi == 1
 }
 
 // #endregion
@@ -220,8 +221,8 @@ func (m *MenQianZimo) GetDescription() string {
 	return "门清听牌的状态下自摸和牌。"
 }
 
-func (m *MenQianZimo) IsYiZhong(huWay *ruleset.HuWay, hand *gameplay.Hand, gotTile *gameplay.GameTile) bool {
-	return hand.IsMenQing() && gotTile.State() == gameplay.GameTileDrawn
+func (m *MenQianZimo) IsYiZhong(huWay *ruleset.HuWay) bool {
+	return huWay.IsMenQing() && huWay.GotTile.IsJustDrawn()
 }
 
 // #endregion
@@ -254,8 +255,8 @@ func (t *TanYao) GetDescription() string {
 	return "由非幺九牌组成的和牌"
 }
 
-func (t *TanYao) IsYiZhong(huWay *ruleset.HuWay, hand *gameplay.Hand, gotTile *gameplay.GameTile) bool {
-	return hand.IsTanYao() && !gotTile.Tile.IsYaoJiu()
+func (t *TanYao) IsYiZhong(huWay *ruleset.HuWay) bool {
+	return huWay.IsTanYao()
 }
 
 // #endregion
@@ -291,8 +292,42 @@ func (p *PinHu) GetDescription() string {
 	return "门清状态下由4副顺子和将牌组成的和牌"
 }
 
-func (p *PinHu) IsYiZhong(huWay *ruleset.HuWay, hand *gameplay.Hand, gotTile *gameplay.GameTile) bool {
-	return huWay.GetShunZiCount() == 4
+func (p *PinHu) IsYiZhong(huWay *ruleset.HuWay) bool {
+	return huWay.GetShunZiCountWithoutChi() == 4
+}
+
+// #endregion
+
+// #region yibeikou
+
+type YiBeiKou struct{}
+
+func (y *YiBeiKou) GetId() string {
+	return IdYiBeiKou
+}
+
+func (y *YiBeiKou) GetFan(hand *gameplay.Hand) int {
+	return 1
+}
+
+func (y *YiBeiKou) IsYakuman() bool {
+	return false
+}
+
+func (y *YiBeiKou) GetName() string {
+	return "一杯口"
+}
+
+func (y *YiBeiKou) NeedMenQing() bool {
+	return true
+}
+
+func (y *YiBeiKou) GetDescription() string {
+	return "由两副相同的顺子组成的和牌"
+}
+
+func (y *YiBeiKou) IsYiZhong(huWay *ruleset.HuWay) bool {
+	return tiles.CountDuplicateTiles(huWay.Shunzi) == 1
 }
 
 // #endregion
@@ -322,11 +357,11 @@ func (d *ToiToi) NeedMenQing() bool {
 }
 
 func (d *ToiToi) GetDescription() string {
-	return "由4副刻子（杠）和将牌组成的和牌"
+	return "由4副刻子（杠）和雀头组成的和牌"
 }
 
-func (d *ToiToi) IsYiZhong(huWay *ruleset.HuWay, hand *gameplay.Hand, gotTile *gameplay.GameTile) bool {
-	return huWay.GetKeZiCount()+hand.GetGangCount()+hand.GetPengCount() == 4
+func (d *ToiToi) IsYiZhong(huWay *ruleset.HuWay) bool {
+	return huWay.GetKeZiCount() == 4
 }
 
 // #endregion
@@ -362,7 +397,7 @@ func (s *SanSeTongShun) GetDescription() string {
 	return "三色同顺"
 }
 
-func (s *SanSeTongShun) IsYiZhong(huWay *ruleset.HuWay, hand *gameplay.Hand, gotTile *gameplay.GameTile) bool {
+func (s *SanSeTongShun) IsYiZhong(huWay *ruleset.HuWay) bool {
 	if huWay.GetShunZiCount() < 3 {
 		return false
 	}
@@ -370,7 +405,7 @@ func (s *SanSeTongShun) IsYiZhong(huWay *ruleset.HuWay, hand *gameplay.Hand, got
 	hasWan := false
 	hasSuo := false
 	hasTong := false
-	for _, shunZi := range huWay.Shunzi {
+	for _, shunZi := range huWay.GetAllShunZi() {
 		if shunZi.TileType == tiles.Wan {
 			hasWan = true
 		}
@@ -423,7 +458,7 @@ func (s *SanSeTongKe) GetDescription() string {
 	return "三色同刻"
 }
 
-func (s *SanSeTongKe) IsYiZhong(huWay *ruleset.HuWay, hand *gameplay.Hand, gotTile *gameplay.GameTile) bool {
+func (s *SanSeTongKe) IsYiZhong(huWay *ruleset.HuWay) bool {
 	if huWay.GetKeZiCount() < 3 {
 		return false
 	}
@@ -431,7 +466,7 @@ func (s *SanSeTongKe) IsYiZhong(huWay *ruleset.HuWay, hand *gameplay.Hand, gotTi
 	hasWan := false
 	hasSuo := false
 	hasTong := false
-	for _, keZi := range huWay.Kezi {
+	for _, keZi := range huWay.GetAllKeZi() {
 		if keZi.TileType == tiles.Wan {
 			hasWan = true
 		}
@@ -487,8 +522,8 @@ func (q *QingYiSe) GetDescription() string {
 	return "由一种花色的牌组成的和牌"
 }
 
-func (q *QingYiSe) IsYiZhong(huWay *ruleset.HuWay, hand *gameplay.Hand, gotTile *gameplay.GameTile) bool {
-	return hand.IsQingYiSe()
+func (q *QingYiSe) IsYiZhong(huWay *ruleset.HuWay) bool {
+	return huWay.IsQingYiSe()
 }
 
 // #endregion
@@ -521,7 +556,7 @@ func (s *ShiSanYao) GetDescription() string {
 	return "全数为单只幺九牌，第14只则可为其中一只幺九牌。"
 }
 
-func (s *ShiSanYao) IsYiZhong(huWay *ruleset.HuWay, hand *gameplay.Hand, gotTile *gameplay.GameTile) bool {
+func (s *ShiSanYao) IsYiZhong(huWay *ruleset.HuWay) bool {
 	return huWay.IsShiSanYao && !huWay.IsShiSanYaoDanJi
 }
 
@@ -555,7 +590,7 @@ func (s *ShiSanYaoDanJi) GetDescription() string {
 	return "全数为单只幺九牌，第14只则可为其中一只幺九牌。"
 }
 
-func (s *ShiSanYaoDanJi) IsYiZhong(huWay *ruleset.HuWay, hand *gameplay.Hand, gotTile *gameplay.GameTile) bool {
+func (s *ShiSanYaoDanJi) IsYiZhong(huWay *ruleset.HuWay) bool {
 	return huWay.IsShiSanYao && huWay.IsShiSanYaoDanJi
 }
 
@@ -589,8 +624,8 @@ func (s *SiAnKe) GetDescription() string {
 	return "四组暗刻"
 }
 
-func (s *SiAnKe) IsYiZhong(huWay *ruleset.HuWay, hand *gameplay.Hand, gotTile *gameplay.GameTile) bool {
-	return huWay.GetKeZiCount() == 4 && gotTile.Tile.Id != huWay.QueTou.Id
+func (s *SiAnKe) IsYiZhong(huWay *ruleset.HuWay) bool {
+	return huWay.GetKeZiCountWithoutPeng() == 4 && huWay.IsGotTileQueTou()
 }
 
 // #endregion
@@ -623,8 +658,8 @@ func (s *SiAnKeDanJi) GetDescription() string {
 	return "四组暗刻，且只胡一张牌（单钓）"
 }
 
-func (s *SiAnKeDanJi) IsYiZhong(huWay *ruleset.HuWay, hand *gameplay.Hand, gotTile *gameplay.GameTile) bool {
-	return huWay.GetKeZiCount() == 4 && gotTile.Tile.Id == huWay.QueTou.Id
+func (s *SiAnKeDanJi) IsYiZhong(huWay *ruleset.HuWay) bool {
+	return huWay.GetKeZiCount() == 4 && huWay.IsGotTileQueTou()
 }
 
 // #endregion
@@ -657,8 +692,8 @@ func (z *ZiYiSe) GetDescription() string {
 	return "由字牌组成的和牌"
 }
 
-func (z *ZiYiSe) IsYiZhong(huWay *ruleset.HuWay, hand *gameplay.Hand, gotTile *gameplay.GameTile) bool {
-	return hand.IsZiYiSe()
+func (z *ZiYiSe) IsYiZhong(huWay *ruleset.HuWay) bool {
+	return huWay.Hand.IsZiYiSe()
 }
 
 // #endregion

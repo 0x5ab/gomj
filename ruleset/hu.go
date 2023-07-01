@@ -125,7 +125,7 @@ func (h *handForCalc) isQiDui() bool {
 	return true
 }
 
-func handToHandForCalc(hand gameplay.Hand, tile tiles.Tile) handForCalc {
+func handToHandForCalc(hand *gameplay.Hand, tile tiles.Tile) handForCalc {
 	handForCalc := newHandForCalc()
 	for _, t := range hand.Tiles {
 		handForCalc.add(t)
@@ -135,6 +135,7 @@ func handToHandForCalc(hand gameplay.Hand, tile tiles.Tile) handForCalc {
 }
 
 type HuWay struct {
+	isValid          bool
 	IsQiDui          bool
 	IsShiSanYao      bool
 	IsShiSanYaoDanJi bool
@@ -142,30 +143,36 @@ type HuWay struct {
 	Kezi             []tiles.Tile
 	QueTou           *tiles.Tile
 	YiZhongs         []YiZhong
+	Point            int
+	Fan              int
+	Hand             *gameplay.Hand
+	GotTile          *gameplay.GameTile
 }
 
-type HuWays struct {
-	Ways    []HuWay
-	Hand    gameplay.Hand
-	GotTile *gameplay.GameTile // const
-}
-
-func (h *HuWays) calcYiZhongs(yizhongRuleset YiZhongRuleset) {
-	for i := range h.Ways {
-		h.Ways[i].YiZhongs = yizhongRuleset.Check(&h.Ways[i], &h.Hand, h.GotTile)
+func NewHuWay(hand *gameplay.Hand, tile *gameplay.GameTile) HuWay {
+	return HuWay{
+		Hand:    hand,
+		GotTile: tile,
 	}
 }
 
 func (h *HuWay) Clone() HuWay {
 	clone := HuWay{
+		isValid:          h.isValid,
 		IsQiDui:          h.IsQiDui,
 		IsShiSanYao:      h.IsShiSanYao,
 		IsShiSanYaoDanJi: h.IsShiSanYaoDanJi,
 		Shunzi:           make([]tiles.Tile, len(h.Shunzi)),
 		Kezi:             make([]tiles.Tile, len(h.Kezi)),
+		YiZhongs:         make([]YiZhong, len(h.YiZhongs)),
+		Point:            h.Point,
+		Fan:              h.Fan,
+		Hand:             h.Hand,
+		GotTile:          h.GotTile,
 	}
 	copy(clone.Shunzi, h.Shunzi)
 	copy(clone.Kezi, h.Kezi)
+	copy(clone.YiZhongs, h.YiZhongs)
 	if h.QueTou != nil {
 		tile := *h.QueTou
 		clone.QueTou = &tile
@@ -174,11 +181,62 @@ func (h *HuWay) Clone() HuWay {
 }
 
 func (h *HuWay) GetKeZiCount() int {
+	return h.GetKeZiCountWithoutPeng() + h.Hand.GetPengCount() + h.Hand.GetGangCount()
+}
+
+func (h *HuWay) GetKeZiCountWithoutPeng() int {
 	return len(h.Kezi)
 }
 
+func (h *HuWay) GetAllKeZi() []tiles.Tile {
+	keZi := make([]tiles.Tile, 0, h.GetKeZiCount())
+	keZi = append(keZi, h.Hand.GetKeZiTiles()...)
+	keZi = append(keZi, h.Kezi...)
+	return keZi
+}
+
 func (h *HuWay) GetShunZiCount() int {
+	return h.GetShunZiCountWithoutChi() + h.Hand.GetChiCount()
+}
+
+func (h *HuWay) GetShunZiCountWithoutChi() int {
 	return len(h.Shunzi)
+}
+
+func (h *HuWay) GetAllShunZi() []tiles.Tile {
+	shunZi := make([]tiles.Tile, 0, h.GetShunZiCount())
+	shunZi = append(shunZi, h.Hand.GetChiTiles()...)
+	shunZi = append(shunZi, h.Shunzi...)
+	return shunZi
+}
+
+func (h *HuWay) IsValid() bool {
+	return h.isValid
+}
+
+func (h *HuWay) IsMenQing() bool {
+	return h.Hand.IsMenQing()
+}
+
+func (h *HuWay) IsZiMo() bool {
+	return h.GotTile.State() == gameplay.GameTileDrawn
+}
+
+func (h *HuWay) IsRiichi() bool {
+	return h.Hand.IsRiichi
+}
+
+func (h *HuWay) IsTanYao() bool {
+	return h.Hand.IsTanYao() && !h.GotTile.Tile.IsYaoJiu()
+}
+
+func (h *HuWay) IsQingYiSe() bool {
+	return h.Hand.IsQingYiSe()
+}
+
+// IsGotTileQueTou returns true if the got tile is the same as the que tou (is 单钓).
+func (h *HuWay) IsGotTileQueTou() bool {
+	return h.IsQiDui || (h.QueTou != nil && h.QueTou.Equal(h.GotTile.Tile))
 }
 
 func (h *HuWay) HumanReadableString() string {
@@ -215,6 +273,15 @@ func (h *HuWay) HumanReadableString() string {
 	return s.String()
 }
 
+func (h *HuWay) CalculateStats(r *Ruleset) {
+	h.YiZhongs = r.Check(h)
+	h.Point = r.GetPoint(h)
+	h.Fan = 0
+	for _, yizhong := range h.YiZhongs {
+		h.Fan += yizhong.GetFan(h.Hand)
+	}
+}
+
 func hasAllYaoJiuTiles(handForCalc handForCalc) bool {
 	return (handForCalc.Wans[0] == 1 && handForCalc.Wans[8] == 1 &&
 		handForCalc.Tongs[0] == 1 && handForCalc.Tongs[8] == 1 &&
@@ -225,7 +292,7 @@ func hasAllYaoJiuTiles(handForCalc handForCalc) bool {
 		handForCalc.Zis[6] == 1)
 }
 
-func isShiSanYao(handForCalc handForCalc, tile tiles.Tile) *HuWay {
+func isShiSanYao(handForCalc handForCalc, tile tiles.Tile) *tiles.Tile {
 	queTou := tiles.Invalid
 	if handForCalc.Wans[0] == 2 {
 		queTou = tiles.Wan1
@@ -259,11 +326,7 @@ func isShiSanYao(handForCalc handForCalc, tile tiles.Tile) *HuWay {
 	}
 	handForCalc.remove(queTou)
 	if hasAllYaoJiuTiles(handForCalc) {
-		return &HuWay{
-			IsShiSanYao:      true,
-			IsShiSanYaoDanJi: false,
-			QueTou:           &queTou,
-		}
+		return &queTou
 	}
 	return nil
 }
@@ -273,145 +336,121 @@ func isShiSanYaoDanJi(handForCalc handForCalc, tile tiles.Tile) bool {
 	return hasAllYaoJiuTiles(handForCalc)
 }
 
-func getShiSanYaoDanJiWays() []HuWay {
-	ways := make([]HuWay, 13)
-	for _, way := range ways {
-		way.IsShiSanYao = true
-		way.IsShiSanYaoDanJi = true
-	}
-	ways[0].QueTou = &tiles.Wan1
-	ways[1].QueTou = &tiles.Wan9
-	ways[2].QueTou = &tiles.Tong1
-	ways[3].QueTou = &tiles.Tong9
-	ways[4].QueTou = &tiles.Suo1
-	ways[5].QueTou = &tiles.Suo9
-	for i := 0; i < 7; i++ {
-		ways[i+6].QueTou = &tiles.Zis[i]
-	}
-	return ways
-}
-
-func CanHu(ruleset YiZhongRuleset, hand gameplay.Hand, tile *gameplay.GameTile) *HuWays {
+func CanHu(ruleset *Ruleset, hand *gameplay.Hand, tile *gameplay.GameTile) *HuWay {
 	handForCalc := handToHandForCalc(hand, tile.Tile)
-	huWays := HuWays{Hand: hand, GotTile: tile}
+	huWay := NewHuWay(hand, tile)
 	if handForCalc.isQiDui() {
-		huWays.Ways = append(huWays.Ways, HuWay{IsQiDui: true})
-		return &huWays
+		huWay.isValid = true
+		huWay.IsQiDui = true
+		huWay.CalculateStats(ruleset)
+		return &huWay
 	}
 	if isShiSanYaoDanJi(handForCalc, tile.Tile) {
-		huWays.Ways = getShiSanYaoDanJiWays()
-		return &huWays
+		// huWays.Ways = getShiSanYaoDanJiWays()
+		huWay.isValid = true
+		huWay.IsShiSanYao = true
+		huWay.IsShiSanYaoDanJi = true
+		huWay.CalculateStats(ruleset)
+		return &huWay
 	}
-	if way := isShiSanYao(handForCalc, tile.Tile); way != nil {
-		huWays.Ways = append(huWays.Ways, *way)
-		return &huWays
+	if queTou := isShiSanYao(handForCalc, tile.Tile); queTou != nil {
+		huWay.isValid = true
+		huWay.IsShiSanYao = true
+		huWay.QueTou = queTou
+		huWay.CalculateStats(ruleset)
+		return &huWay
 	}
-	currentWay := &HuWay{}
-	canHu(&huWays, currentWay, &handForCalc)
-	huWays.calcYiZhongs(ruleset)
-	return &huWays
+	result := NewHuWay(hand, tile)
+	ruleset.canHu(&result, &huWay, &handForCalc)
+	return &result
 }
 
-func canHu(huWays *HuWays, currentWay *HuWay, handForCalc *handForCalc) bool {
+func (r *Ruleset) canHu(result *HuWay, currentWay *HuWay, handForCalc *handForCalc) {
 	if handForCalc.isNonDivisible(currentWay.QueTou != nil) {
 		if handForCalc.isHu() {
-			huWays.Ways = append(huWays.Ways, currentWay.Clone())
-			return true
+			// we need only the hu way with the highest fan and/or points/fu
+			currentWay.isValid = true
+			currentWay.CalculateStats(r)
+			if currentWay.Fan > result.Fan || (currentWay.Fan == result.Fan && currentWay.Point > result.Point) {
+				*result = currentWay.Clone()
+			}
 		}
-		return false
+		return
 	}
 	for i := 0; i < 9; i++ {
 		// Wan
-		if currentWay.QueTou == nil && handForCalc.Wans[i] >= 2 {
-			handForCalc.Wans[i] -= 2
-			currentWay.QueTou = &tiles.Tile{TileType: tiles.Wan, Number: i + 1}
-			if canHu(huWays, currentWay, handForCalc) {
-				return true
-			}
-			currentWay.QueTou = nil
-			handForCalc.Wans[i] += 2
-		}
 		if handForCalc.Wans[i] >= 3 {
 			handForCalc.Wans[i] -= 3
 			currentWay.Kezi = append(currentWay.Kezi, tiles.Tile{TileType: tiles.Wan, Number: i + 1})
-			if canHu(huWays, currentWay, handForCalc) {
-				return true
-			}
+			r.canHu(result, currentWay, handForCalc)
 			currentWay.Kezi = currentWay.Kezi[:len(currentWay.Kezi)-1]
 			handForCalc.Wans[i] += 3
+		}
+		if currentWay.QueTou == nil && handForCalc.Wans[i] >= 2 {
+			handForCalc.Wans[i] -= 2
+			currentWay.QueTou = &tiles.Tile{TileType: tiles.Wan, Number: i + 1}
+			r.canHu(result, currentWay, handForCalc)
+			currentWay.QueTou = nil
+			handForCalc.Wans[i] += 2
 		}
 		if i < 7 && handForCalc.Wans[i] >= 1 && handForCalc.Wans[i+1] >= 1 && handForCalc.Wans[i+2] >= 1 {
 			handForCalc.Wans[i] -= 1
 			handForCalc.Wans[i+1] -= 1
 			handForCalc.Wans[i+2] -= 1
 			currentWay.Shunzi = append(currentWay.Shunzi, tiles.Tile{TileType: tiles.Wan, Number: i + 1})
-			if canHu(huWays, currentWay, handForCalc) {
-				return true
-			}
+			r.canHu(result, currentWay, handForCalc)
 			currentWay.Shunzi = currentWay.Shunzi[:len(currentWay.Shunzi)-1]
 			handForCalc.Wans[i] += 1
 			handForCalc.Wans[i+1] += 1
 			handForCalc.Wans[i+2] += 1
 		}
 		// Tong
-		if currentWay.QueTou == nil && handForCalc.Tongs[i] >= 2 {
-			handForCalc.Tongs[i] -= 2
-			currentWay.QueTou = &tiles.Tile{TileType: tiles.Tong, Number: i + 1}
-			if canHu(huWays, currentWay, handForCalc) {
-				return true
-			}
-			currentWay.QueTou = nil
-			handForCalc.Tongs[i] += 2
-		}
 		if handForCalc.Tongs[i] >= 3 {
 			handForCalc.Tongs[i] -= 3
 			currentWay.Kezi = append(currentWay.Kezi, tiles.Tile{TileType: tiles.Tong, Number: i + 1})
-			if canHu(huWays, currentWay, handForCalc) {
-				return true
-			}
+			r.canHu(result, currentWay, handForCalc)
 			currentWay.Kezi = currentWay.Kezi[:len(currentWay.Kezi)-1]
 			handForCalc.Tongs[i] += 3
+		}
+		if currentWay.QueTou == nil && handForCalc.Tongs[i] >= 2 {
+			handForCalc.Tongs[i] -= 2
+			currentWay.QueTou = &tiles.Tile{TileType: tiles.Tong, Number: i + 1}
+			r.canHu(result, currentWay, handForCalc)
+			currentWay.QueTou = nil
+			handForCalc.Tongs[i] += 2
 		}
 		if i < 7 && handForCalc.Tongs[i] >= 1 && handForCalc.Tongs[i+1] >= 1 && handForCalc.Tongs[i+2] >= 1 {
 			handForCalc.Tongs[i] -= 1
 			handForCalc.Tongs[i+1] -= 1
 			handForCalc.Tongs[i+2] -= 1
 			currentWay.Shunzi = append(currentWay.Shunzi, tiles.Tile{TileType: tiles.Tong, Number: i + 1})
-			if canHu(huWays, currentWay, handForCalc) {
-				return true
-			}
+			r.canHu(result, currentWay, handForCalc)
 			currentWay.Shunzi = currentWay.Shunzi[:len(currentWay.Shunzi)-1]
 			handForCalc.Tongs[i] += 1
 			handForCalc.Tongs[i+1] += 1
 			handForCalc.Tongs[i+2] += 1
 		}
 		// Suo
-		if currentWay.QueTou == nil && handForCalc.Suos[i] >= 2 {
-			handForCalc.Suos[i] -= 2
-			currentWay.QueTou = &tiles.Tile{TileType: tiles.Suo, Number: i + 1}
-			if canHu(huWays, currentWay, handForCalc) {
-				return true
-			}
-			currentWay.QueTou = nil
-			handForCalc.Suos[i] += 2
-		}
 		if handForCalc.Suos[i] >= 3 {
 			handForCalc.Suos[i] -= 3
 			currentWay.Kezi = append(currentWay.Kezi, tiles.Tile{TileType: tiles.Suo, Number: i + 1})
-			if canHu(huWays, currentWay, handForCalc) {
-				return true
-			}
+			r.canHu(result, currentWay, handForCalc)
 			currentWay.Kezi = currentWay.Kezi[:len(currentWay.Kezi)-1]
 			handForCalc.Suos[i] += 3
+		}
+		if currentWay.QueTou == nil && handForCalc.Suos[i] >= 2 {
+			handForCalc.Suos[i] -= 2
+			currentWay.QueTou = &tiles.Tile{TileType: tiles.Suo, Number: i + 1}
+			r.canHu(result, currentWay, handForCalc)
+			currentWay.QueTou = nil
+			handForCalc.Suos[i] += 2
 		}
 		if i < 7 && handForCalc.Suos[i] >= 1 && handForCalc.Suos[i+1] >= 1 && handForCalc.Suos[i+2] >= 1 {
 			handForCalc.Suos[i] -= 1
 			handForCalc.Suos[i+1] -= 1
 			handForCalc.Suos[i+2] -= 1
 			currentWay.Shunzi = append(currentWay.Shunzi, tiles.Tile{TileType: tiles.Suo, Number: i + 1})
-			if canHu(huWays, currentWay, handForCalc) {
-				return true
-			}
+			r.canHu(result, currentWay, handForCalc)
 			currentWay.Shunzi = currentWay.Shunzi[:len(currentWay.Shunzi)-1]
 			handForCalc.Suos[i] += 1
 			handForCalc.Suos[i+1] += 1
@@ -420,24 +459,19 @@ func canHu(huWays *HuWays, currentWay *HuWay, handForCalc *handForCalc) bool {
 	}
 	for i := 0; i < 7; i++ {
 		// Zi
-		if currentWay.QueTou == nil && handForCalc.Zis[i] >= 2 {
-			handForCalc.Zis[i] -= 2
-			currentWay.QueTou = &tiles.Tile{TileType: tiles.Zi, Number: i + 1}
-			if canHu(huWays, currentWay, handForCalc) {
-				return true
-			}
-			currentWay.QueTou = nil
-			handForCalc.Zis[i] += 2
-		}
 		if handForCalc.Zis[i] >= 3 {
 			handForCalc.Zis[i] -= 3
 			currentWay.Kezi = append(currentWay.Kezi, tiles.Tile{TileType: tiles.Zi, Number: i + 1})
-			if canHu(huWays, currentWay, handForCalc) {
-				return true
-			}
+			r.canHu(result, currentWay, handForCalc)
 			currentWay.Kezi = currentWay.Kezi[:len(currentWay.Kezi)-1]
 			handForCalc.Zis[i] += 3
 		}
+		if currentWay.QueTou == nil && handForCalc.Zis[i] >= 2 {
+			handForCalc.Zis[i] -= 2
+			currentWay.QueTou = &tiles.Tile{TileType: tiles.Zi, Number: i + 1}
+			r.canHu(result, currentWay, handForCalc)
+			currentWay.QueTou = nil
+			handForCalc.Zis[i] += 2
+		}
 	}
-	return false
 }

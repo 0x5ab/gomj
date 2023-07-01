@@ -39,6 +39,12 @@ func (t *GameTile) Play() {
 	t.state = GameTilePlayed
 }
 
+// IsJustDrawn returns true if this tile is just drawn
+func (t *GameTile) IsJustDrawn() bool {
+	return t.state == GameTileDrawn
+}
+
+// IsInHand returns true if this tile is in hand or just drawn
 func (t *GameTile) IsInHand() bool {
 	return t.state == GameTileDrawn || t.state == GameTileInHand
 }
