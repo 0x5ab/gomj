@@ -89,6 +89,18 @@ func (t Tile) Next() Tile {
 	return Tile{t.Id + 1, t.TileType, t.Number + 1}
 }
 
+func (t Tile) IsYaoJiu() bool {
+	return t.Number == 1 || t.Number == 9 || t.TileType == Zi
+}
+
+func (t Tile) IsZi() bool {
+	return t.TileType == Zi
+}
+
+func (t Tile) IsFeng() bool {
+	return t.TileType == Zi && t.Number <= 4
+}
+
 func (t Tile) String() string {
 	return fmt.Sprintf("%d%c", t.Number, t.TileType)
 }

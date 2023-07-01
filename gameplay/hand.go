@@ -6,22 +6,6 @@ import (
 	"github.com/0x5ab/gomj/tiles"
 )
 
-type PlayedTileSource int
-
-const (
-	FromSelf PlayedTileSource = iota
-	FromLeft
-	FromOpposite
-	FromRight
-	FromLingShang
-)
-
-type PlayedTile struct {
-	Tile   tiles.Tile
-	Player *Player
-	Source PlayedTileSource
-}
-
 type FuluType int
 
 const (
@@ -31,10 +15,10 @@ const (
 )
 
 type Fulu struct {
-	Player     *Player
+	Player     *Player // the source player of this fulu
 	Type       FuluType
 	StartTile  tiles.Tile
-	PlayedTile PlayedTile
+	PlayedTile GameTile
 }
 
 func (f *Fulu) IsChi() bool {
@@ -90,8 +74,12 @@ func (f *Fulu) HumanReadableString() string {
 }
 
 type Hand struct {
-	Tiles []tiles.Tile
-	Fulu  []Fulu
+	Player           *Player // the owner of this hand
+	Tiles            []tiles.Tile
+	Fulu             []Fulu
+	IsRiichi         bool
+	DrawNumber       int
+	DrawsAfterRiichi int
 }
 
 func (h *Hand) String() string {
@@ -155,6 +143,29 @@ func (h *Hand) IsQingYiSe() bool {
 	}
 	for _, f := range h.Fulu {
 		if f.StartTile.TileType != color {
+			return false
+		}
+	}
+	return true
+}
+
+func (h *Hand) IsZiYiSe() bool {
+	for _, t := range h.Tiles {
+		if !t.IsZi() {
+			return false
+		}
+	}
+	for _, f := range h.Fulu {
+		if !f.IsPeng() || !f.StartTile.IsZi() {
+			return false
+		}
+	}
+	return true
+}
+
+func (h *Hand) IsTanYao() bool {
+	for _, t := range h.Tiles {
+		if t.IsYaoJiu() {
 			return false
 		}
 	}

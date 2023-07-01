@@ -19,7 +19,7 @@ func main() {
 	fmt.Printf("%s\n", hand.String())
 	fmt.Println("能胡: ")
 	for _, tt := range tiles.AllTiles {
-		huways := ruleset.CanHu(&ruleset_jp.YiZhongRuleset, hand, gameplay.PlayedTile{Tile: tt})
+		huways := ruleset.CanHu(&ruleset_jp.YiZhongRuleset, hand, &gameplay.GameTile{Tile: tt})
 		for _, huway := range huways.Ways {
 			fmt.Printf("%s | 役种：", tt.HumanReadableString())
 			if len(huway.YiZhongs) == 0 {
@@ -30,7 +30,7 @@ func main() {
 				if yizhong.(ruleset_jp.JapaneseMahjongYiZhong).IsYakuman() {
 					fmt.Print("(役满)，")
 				} else {
-					fmt.Printf("(%d番)，", yizhong.GetFan())
+					fmt.Printf("(%d番)，", yizhong.GetFan(&hand))
 				}
 			}
 			fmt.Print("| ")

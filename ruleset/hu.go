@@ -135,33 +135,34 @@ func handToHandForCalc(hand gameplay.Hand, tile tiles.Tile) handForCalc {
 }
 
 type HuWay struct {
-	IsQiDui     bool
-	IsShiSanYao bool
-	Shunzi      []tiles.Tile
-	Kezi        []tiles.Tile
-	QueTou      *tiles.Tile
-	GotTile     *tiles.Tile // const
-	YiZhongs    []YiZhong
+	IsQiDui          bool
+	IsShiSanYao      bool
+	IsShiSanYaoDanJi bool
+	Shunzi           []tiles.Tile
+	Kezi             []tiles.Tile
+	QueTou           *tiles.Tile
+	YiZhongs         []YiZhong
 }
 
 type HuWays struct {
 	Ways    []HuWay
 	Hand    gameplay.Hand
-	GotTile gameplay.PlayedTile
+	GotTile *gameplay.GameTile // const
 }
 
 func (h *HuWays) calcYiZhongs(yizhongRuleset YiZhongRuleset) {
 	for i := range h.Ways {
-		h.Ways[i].YiZhongs = yizhongRuleset.Check(&h.Ways[i], &h.Hand, &h.GotTile)
+		h.Ways[i].YiZhongs = yizhongRuleset.Check(&h.Ways[i], &h.Hand, h.GotTile)
 	}
 }
 
 func (h *HuWay) Clone() HuWay {
 	clone := HuWay{
-		IsQiDui:     h.IsQiDui,
-		IsShiSanYao: h.IsShiSanYao,
-		Shunzi:      make([]tiles.Tile, len(h.Shunzi)),
-		Kezi:        make([]tiles.Tile, len(h.Kezi)),
+		IsQiDui:          h.IsQiDui,
+		IsShiSanYao:      h.IsShiSanYao,
+		IsShiSanYaoDanJi: h.IsShiSanYaoDanJi,
+		Shunzi:           make([]tiles.Tile, len(h.Shunzi)),
+		Kezi:             make([]tiles.Tile, len(h.Kezi)),
 	}
 	copy(clone.Shunzi, h.Shunzi)
 	copy(clone.Kezi, h.Kezi)
@@ -185,6 +186,9 @@ func (h *HuWay) HumanReadableString() string {
 		return "七对"
 	}
 	if h.IsShiSanYao {
+		if h.IsShiSanYaoDanJi {
+			return "十三幺单骑"
+		}
 		return "十三幺"
 	}
 	s := strings.Builder{}
@@ -254,8 +258,9 @@ func isShiSanYao(handForCalc handForCalc, tile tiles.Tile) *HuWay {
 	handForCalc.remove(queTou)
 	if hasAllYaoJiuTiles(handForCalc) {
 		return &HuWay{
-			IsShiSanYao: true,
-			QueTou:      &queTou,
+			IsShiSanYao:      true,
+			IsShiSanYaoDanJi: false,
+			QueTou:           &queTou,
 		}
 	}
 	return nil
@@ -270,6 +275,7 @@ func getShiSanYaoDanJiWays() []HuWay {
 	ways := make([]HuWay, 13)
 	for _, way := range ways {
 		way.IsShiSanYao = true
+		way.IsShiSanYaoDanJi = true
 	}
 	ways[0].QueTou = &tiles.Wan1
 	ways[1].QueTou = &tiles.Wan9
@@ -283,7 +289,7 @@ func getShiSanYaoDanJiWays() []HuWay {
 	return ways
 }
 
-func CanHu(ruleset YiZhongRuleset, hand gameplay.Hand, tile gameplay.PlayedTile) *HuWays {
+func CanHu(ruleset YiZhongRuleset, hand gameplay.Hand, tile *gameplay.GameTile) *HuWays {
 	handForCalc := handToHandForCalc(hand, tile.Tile)
 	huWays := HuWays{Hand: hand, GotTile: tile}
 	if handForCalc.isQiDui() {
