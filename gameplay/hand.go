@@ -74,6 +74,7 @@ func (f *Fulu) HumanReadableString() string {
 }
 
 type Hand struct {
+	Game             *Game
 	Player           *Player // the owner of this hand
 	Tiles            []tiles.Tile
 	Fulu             []Fulu

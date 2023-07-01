@@ -199,6 +199,7 @@ func (h *HuWay) HumanReadableString() string {
 			s.WriteString("，")
 		}
 	}
+	s.WriteString(" | ")
 	if len(h.Kezi) > 0 {
 		s.WriteString("刻子：")
 		for _, kezi := range h.Kezi {
@@ -206,6 +207,7 @@ func (h *HuWay) HumanReadableString() string {
 			s.WriteString("，")
 		}
 	}
+	s.WriteString(" | ")
 	if h.QueTou != nil {
 		s.WriteString("雀头：")
 		s.WriteString(h.QueTou.HumanReadableString())

@@ -10,12 +10,14 @@ import (
 )
 
 func main() {
-	t, err := tiles.ParseTiles("1z1z1z2z2z2z5z")
+	// t, err := tiles.ParseTiles("1z1z1z2z2z2z5z")
+	t, err := tiles.ParseTiles("3m3m3m4m5m5m6m6m7m7m8m8m8m")
 	if err != nil {
 		panic(err)
 	}
 	fmt.Printf("%+v\n", t)
-	hand := gameplay.Hand{Tiles: t, Fulu: []gameplay.Fulu{{StartTile: tiles.Bai, Type: gameplay.Peng}, {StartTile: tiles.Fa, Type: gameplay.Peng}}}
+	// hand := gameplay.Hand{Tiles: t, Fulu: []gameplay.Fulu{{StartTile: tiles.Bai, Type: gameplay.Peng}, {StartTile: tiles.Fa, Type: gameplay.Peng}}}
+	hand := gameplay.Hand{Tiles: t}
 	fmt.Printf("%s\n", hand.String())
 	fmt.Println("能胡: ")
 	for _, tt := range tiles.AllTiles {

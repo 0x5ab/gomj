@@ -3,6 +3,7 @@ package ruleset_jp
 import (
 	"github.com/0x5ab/gomj/gameplay"
 	"github.com/0x5ab/gomj/ruleset"
+	"github.com/0x5ab/gomj/tiles"
 )
 
 const (
@@ -13,15 +14,49 @@ const (
 	IdTanYao      = "jp_tanyao"
 	IdPingHu      = "jp_ph"
 	IdYiBeiKou    = "jp_ybk"
+	IdYakuHai     = "jp_yh"
+	IdLingShang   = "jp_ls"
+	IdQiangGang   = "jp_qg"
+	IdHaiDi       = "jp_haidi"
+	IdHeDi        = "jp_hedi"
 
 	// 2番
 	IdSanSeTongShun = "jp_ssts"
+	IdSanSeTongKe   = "jp_sstk"
+	IdYiTiaoLong    = "jp_ytl"
 	IdDuiDuiHu      = "jp_ddh"
-	IdQingYiSe      = "jp_qys"
+	IdSanAnKe       = "jp_sanak"
+	IdSanGangZi     = "jp_sangz"
+	IdQiDuiZi       = "jp_qdz"
+	IdHunQuanDaiYao = "jp_hqdy"
+	IdHunLaoTou     = "jp_hlt"
+	IdXiaoSanYuan   = "jp_xsy"
+	IdDoubleRiiChi  = "jp_drc"
+
+	// 3番
+	IdHunYiSe        = "jp_hys"
+	IdChunQuanDaiYao = "jp_cqdy"
+	IdErBeiKou       = "jp_ebk"
+
+	// 6番
+	IdQingYiSe = "jp_qys"
 
 	// 役满
-	IdShiSanYao = "jp_ssy"
-	IdZiYiSe    = "jp_zys"
+	IdShiSanYao      = "jp_ssy"
+	IdShiSanYaoDanJi = "jp_ssydj"
+	IdDaSanYuan      = "jp_dsy"
+	IdSiAnKe         = "jp_siak"
+	IdSiAnKeDanJi    = "jp_siakdj"
+	IdZiYiSe         = "jp_zys"
+	IdLvYiSe         = "jp_lys"
+	IdXiaoSiXi       = "jp_xsx"
+	IdDaSiXi         = "jp_dsx"
+	IdQingLaoTou     = "jp_qlt"
+	IdJiuLianBaoDeng = "jp_jlbd"
+	IdChunJiuLian    = "jp_cjl"
+	IdSiGangZi       = "jp_sigz"
+	IdTianHu         = "jp_th"
+	IdDiHu           = "jp_dh"
 )
 
 func ContainsYiZhong(yiZhongs []ruleset.YiZhong, yiZhongId string) bool {
@@ -76,9 +111,14 @@ var (
 			&TanYao{},
 			&MenQianZimo{},
 			&ToiToi{},
+			&SanSeTongShun{},
+			&SanSeTongKe{},
 			&PinHu{},
 			&QingYiSe{},
 			&ShiSanYao{},
+			&ShiSanYaoDanJi{},
+			&SiAnKe{},
+			&SiAnKeDanJi{},
 			&ZiYiSe{},
 		},
 	}
@@ -215,7 +255,7 @@ func (t *TanYao) GetDescription() string {
 }
 
 func (t *TanYao) IsYiZhong(huWay *ruleset.HuWay, hand *gameplay.Hand, gotTile *gameplay.GameTile) bool {
-	return hand.IsTanYao()
+	return hand.IsTanYao() && !gotTile.Tile.IsYaoJiu()
 }
 
 // #endregion
@@ -300,7 +340,10 @@ func (s *SanSeTongShun) GetId() string {
 }
 
 func (s *SanSeTongShun) GetFan(hand *gameplay.Hand) int {
-	return 2
+	if hand.IsMenQing() {
+		return 2
+	}
+	return 1
 }
 
 func (s *SanSeTongShun) IsYakuman() bool {
@@ -317,6 +360,98 @@ func (s *SanSeTongShun) NeedMenQing() bool {
 
 func (s *SanSeTongShun) GetDescription() string {
 	return "三色同顺"
+}
+
+func (s *SanSeTongShun) IsYiZhong(huWay *ruleset.HuWay, hand *gameplay.Hand, gotTile *gameplay.GameTile) bool {
+	if huWay.GetShunZiCount() < 3 {
+		return false
+	}
+	hasStartTiles := make(map[int]int)
+	hasWan := false
+	hasSuo := false
+	hasTong := false
+	for _, shunZi := range huWay.Shunzi {
+		if shunZi.TileType == tiles.Wan {
+			hasWan = true
+		}
+		if shunZi.TileType == tiles.Suo {
+			hasSuo = true
+		}
+		if shunZi.TileType == tiles.Tong {
+			hasTong = true
+		}
+		hasStartTiles[shunZi.Number]++
+	}
+	if !hasWan || !hasSuo || !hasTong {
+		return false
+	}
+	for _, v := range hasStartTiles {
+		if v == 3 {
+			return true
+		}
+	}
+	return false
+}
+
+// #endregion
+
+// #region sansetongke
+
+type SanSeTongKe struct{}
+
+func (s *SanSeTongKe) GetId() string {
+	return IdSanSeTongKe
+}
+
+func (s *SanSeTongKe) GetFan(hand *gameplay.Hand) int {
+	return 2
+}
+
+func (s *SanSeTongKe) IsYakuman() bool {
+	return false
+}
+
+func (s *SanSeTongKe) GetName() string {
+	return "三色同刻"
+}
+
+func (s *SanSeTongKe) NeedMenQing() bool {
+	return false
+}
+
+func (s *SanSeTongKe) GetDescription() string {
+	return "三色同刻"
+}
+
+func (s *SanSeTongKe) IsYiZhong(huWay *ruleset.HuWay, hand *gameplay.Hand, gotTile *gameplay.GameTile) bool {
+	if huWay.GetKeZiCount() < 3 {
+		return false
+	}
+	hasStartTiles := make(map[int]int)
+	hasWan := false
+	hasSuo := false
+	hasTong := false
+	for _, keZi := range huWay.Kezi {
+		if keZi.TileType == tiles.Wan {
+			hasWan = true
+		}
+		if keZi.TileType == tiles.Suo {
+			hasSuo = true
+		}
+		if keZi.TileType == tiles.Tong {
+			hasTong = true
+		}
+		hasStartTiles[keZi.Number]++
+	}
+	if !hasWan || !hasSuo || !hasTong {
+		return false
+	}
+	for _, v := range hasStartTiles {
+		if v == 3 {
+			return true
+		}
+	}
+	return false
 }
 
 // #endregion
@@ -388,6 +523,108 @@ func (s *ShiSanYao) GetDescription() string {
 
 func (s *ShiSanYao) IsYiZhong(huWay *ruleset.HuWay, hand *gameplay.Hand, gotTile *gameplay.GameTile) bool {
 	return huWay.IsShiSanYao && !huWay.IsShiSanYaoDanJi
+}
+
+// #endregion
+
+// #region shisanyaodanji
+
+type ShiSanYaoDanJi struct{}
+
+func (s *ShiSanYaoDanJi) GetId() string {
+	return IdShiSanYaoDanJi
+}
+
+func (s *ShiSanYaoDanJi) GetFan(hand *gameplay.Hand) int {
+	return 13
+}
+
+func (s *ShiSanYaoDanJi) IsYakuman() bool {
+	return true
+}
+
+func (s *ShiSanYaoDanJi) GetName() string {
+	return "国士无双十三面"
+}
+
+func (s *ShiSanYaoDanJi) NeedMenQing() bool {
+	return true
+}
+
+func (s *ShiSanYaoDanJi) GetDescription() string {
+	return "全数为单只幺九牌，第14只则可为其中一只幺九牌。"
+}
+
+func (s *ShiSanYaoDanJi) IsYiZhong(huWay *ruleset.HuWay, hand *gameplay.Hand, gotTile *gameplay.GameTile) bool {
+	return huWay.IsShiSanYao && huWay.IsShiSanYaoDanJi
+}
+
+// #endregion
+
+// #region sianke
+
+type SiAnKe struct{}
+
+func (s *SiAnKe) GetId() string {
+	return IdSiAnKe
+}
+
+func (s *SiAnKe) GetFan(hand *gameplay.Hand) int {
+	return 13
+}
+
+func (s *SiAnKe) IsYakuman() bool {
+	return true
+}
+
+func (s *SiAnKe) GetName() string {
+	return "四暗刻"
+}
+
+func (s *SiAnKe) NeedMenQing() bool {
+	return true
+}
+
+func (s *SiAnKe) GetDescription() string {
+	return "四组暗刻"
+}
+
+func (s *SiAnKe) IsYiZhong(huWay *ruleset.HuWay, hand *gameplay.Hand, gotTile *gameplay.GameTile) bool {
+	return huWay.GetKeZiCount() == 4 && gotTile.Tile.Id != huWay.QueTou.Id
+}
+
+// #endregion
+
+// #region siankedanji
+
+type SiAnKeDanJi struct{}
+
+func (s *SiAnKeDanJi) GetId() string {
+	return IdSiAnKe
+}
+
+func (s *SiAnKeDanJi) GetFan(hand *gameplay.Hand) int {
+	return 13
+}
+
+func (s *SiAnKeDanJi) IsYakuman() bool {
+	return true
+}
+
+func (s *SiAnKeDanJi) GetName() string {
+	return "四暗刻单骑"
+}
+
+func (s *SiAnKeDanJi) NeedMenQing() bool {
+	return true
+}
+
+func (s *SiAnKeDanJi) GetDescription() string {
+	return "四组暗刻，且只胡一张牌（单钓）"
+}
+
+func (s *SiAnKeDanJi) IsYiZhong(huWay *ruleset.HuWay, hand *gameplay.Hand, gotTile *gameplay.GameTile) bool {
+	return huWay.GetKeZiCount() == 4 && gotTile.Tile.Id == huWay.QueTou.Id
 }
 
 // #endregion
