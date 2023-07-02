@@ -7,6 +7,7 @@ import (
 	"github.com/0x5ab/gomj/ruleset"
 	"github.com/0x5ab/gomj/ruleset/ruleset_jp"
 	"github.com/0x5ab/gomj/tiles"
+	"github.com/0x5ab/gomj/wind"
 )
 
 func main() {
@@ -18,7 +19,7 @@ func main() {
 	}
 	fmt.Printf("%+v\n", t)
 	// hand := gameplay.Hand{Tiles: t, Fulu: []gameplay.Fulu{{StartTile: tiles.Bai, Type: gameplay.Peng}, {StartTile: tiles.Fa, Type: gameplay.Peng}}}
-	hand := gameplay.NewHand(nil, nil)
+	hand := gameplay.NewHand(&gameplay.Game{Wind: wind.East}, &gameplay.Player{Wind: wind.East})
 	hand.Tiles = t
 	cnt := make(map[int]int)
 	for _, tile := range hand.Tiles {
@@ -48,7 +49,7 @@ func main() {
 				fmt.Printf("(%d番)，", yizhong.GetFan(hand))
 			}
 		}
-		fmt.Print("| ")
+		fmt.Printf("| %d符", huway.Point)
 		for _, fulu := range hand.Fulu {
 			fmt.Printf("%s，", fulu.HumanReadableString())
 		}

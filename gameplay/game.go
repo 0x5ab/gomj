@@ -1,16 +1,11 @@
 package gameplay
 
-type Wind int
-
-const (
-	East  Wind = 1
-	South Wind = 2
-	West  Wind = 3
-	North Wind = 4
+import (
+	"github.com/0x5ab/gomj/wind"
 )
 
 type Game struct {
-	Wind           Wind
+	Wind           wind.Wind
 	Round          int
 	DrawsRemaining int
 }

@@ -7,6 +7,12 @@ import (
 )
 
 const (
+	// Special
+	IdDora    = "jp_dora"
+	IdUraDora = "jp_uradora"
+	IdAkaDora = "jp_akadora"
+	IdPei     = "jp_pei"
+
 	// 1番
 	IdRiiChi      = "jp_riichi"
 	IdIppatsu     = "jp_ippatsu"

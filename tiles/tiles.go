@@ -6,6 +6,7 @@ import (
 
 	"github.com/0x5ab/gomj/errors"
 	"github.com/0x5ab/gomj/utils"
+	"github.com/0x5ab/gomj/wind"
 )
 
 type TileType rune
@@ -56,10 +57,10 @@ var (
 	Suo8 = Tile{28, Suo, 8}
 	Suo9 = Tile{29, Suo, 9}
 	// 字
-	Dong  = Tile{31, Zi, 1}
-	Nan   = Tile{32, Zi, 2}
-	Xi    = Tile{33, Zi, 3}
-	Bei   = Tile{34, Zi, 4}
+	Dong  = Tile{31, Zi, int(wind.East)}
+	Nan   = Tile{32, Zi, int(wind.South)}
+	Xi    = Tile{33, Zi, int(wind.West)}
+	Bei   = Tile{34, Zi, int(wind.North)}
 	Zhong = Tile{35, Zi, 5}
 	Fa    = Tile{36, Zi, 6}
 	Bai   = Tile{37, Zi, 7}
@@ -101,6 +102,10 @@ func (t Tile) IsFeng() bool {
 	return t.TileType == Zi && t.Number <= 4
 }
 
+func (t Tile) IsSanYuan() bool {
+	return t.TileType == Zi && t.Number >= 5
+}
+
 func (t Tile) Equal(t2 Tile) bool {
 	return t.Id == t2.Id
 }
@@ -136,6 +141,10 @@ func (t Tile) HumanReadableString() string {
 		}
 	}
 	return ""
+}
+
+func (t Tile) IsWindType(w wind.Wind) bool {
+	return t.TileType == Zi && t.Number == int(w)
 }
 
 func (t Tile) Ptr() *Tile {

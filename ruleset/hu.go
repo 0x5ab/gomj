@@ -125,6 +125,16 @@ func (h *handForCalc) isQiDui() bool {
 	return true
 }
 
+func (h *handForCalc) hasAllYaoJiuTiles() bool {
+	return (h.Wans[0] == 1 && h.Wans[8] == 1 &&
+		h.Tongs[0] == 1 && h.Tongs[8] == 1 &&
+		h.Suos[0] == 1 && h.Suos[8] == 1 &&
+		h.Zis[0] == 1 && h.Zis[1] == 1 &&
+		h.Zis[2] == 1 && h.Zis[3] == 1 &&
+		h.Zis[4] == 1 && h.Zis[5] == 1 &&
+		h.Zis[6] == 1)
+}
+
 func handToHandForCalc(hand *gameplay.Hand, tile tiles.Tile) handForCalc {
 	handForCalc := newHandForCalc()
 	for _, t := range hand.Tiles {
@@ -282,14 +292,50 @@ func (h *HuWay) CalculateStats(r *Ruleset) {
 	}
 }
 
-func hasAllYaoJiuTiles(handForCalc handForCalc) bool {
-	return (handForCalc.Wans[0] == 1 && handForCalc.Wans[8] == 1 &&
-		handForCalc.Tongs[0] == 1 && handForCalc.Tongs[8] == 1 &&
-		handForCalc.Suos[0] == 1 && handForCalc.Suos[8] == 1 &&
-		handForCalc.Zis[0] == 1 && handForCalc.Zis[1] == 1 &&
-		handForCalc.Zis[2] == 1 && handForCalc.Zis[3] == 1 &&
-		handForCalc.Zis[4] == 1 && handForCalc.Zis[5] == 1 &&
-		handForCalc.Zis[6] == 1)
+type TingPaiType int
+
+const (
+	TingPaiTypeNone TingPaiType = iota
+	TingPaiTypeNormal
+	TingPaiTypeQiDui
+	TingPaiTypeShiSanYao
+	// 单钓，边张，或者嵌张
+	TingPaiTypeSpecial
+)
+
+func (h *HuWay) GetTingPaiType() TingPaiType {
+	if !h.isValid {
+		return TingPaiTypeNone
+	}
+	if h.IsQiDui {
+		return TingPaiTypeQiDui
+	}
+	if h.IsShiSanYao {
+		return TingPaiTypeShiSanYao
+	}
+	// check if the got tile is a 单钓
+	if h.IsGotTileQueTou() {
+		return TingPaiTypeSpecial
+	}
+	// check if the got tile is a 边张
+	if !h.GotTile.Tile.IsZi() &&
+		(h.GotTile.Tile.Number == 3 || h.GotTile.Tile.Number == 7) {
+		for _, shunzi := range h.Shunzi {
+			if shunzi.Number == 1 || shunzi.Number == 7 {
+				return TingPaiTypeSpecial
+			}
+		}
+	}
+	// check if the got tile is a 嵌张
+	if !h.GotTile.Tile.IsZi() &&
+		(h.GotTile.Tile.Number == 2 || h.GotTile.Tile.Number == 8) {
+		for _, shunzi := range h.Shunzi {
+			if shunzi.Number == 3 || shunzi.Number == 7 {
+				return TingPaiTypeSpecial
+			}
+		}
+	}
+	return TingPaiTypeNormal
 }
 
 func isShiSanYao(handForCalc handForCalc, tile tiles.Tile) *tiles.Tile {
@@ -325,7 +371,7 @@ func isShiSanYao(handForCalc handForCalc, tile tiles.Tile) *tiles.Tile {
 		return nil
 	}
 	handForCalc.remove(queTou)
-	if hasAllYaoJiuTiles(handForCalc) {
+	if handForCalc.hasAllYaoJiuTiles() {
 		return &queTou
 	}
 	return nil
@@ -333,7 +379,7 @@ func isShiSanYao(handForCalc handForCalc, tile tiles.Tile) *tiles.Tile {
 
 func isShiSanYaoDanJi(handForCalc handForCalc, tile tiles.Tile) bool {
 	handForCalc.remove(tile)
-	return hasAllYaoJiuTiles(handForCalc)
+	return handForCalc.hasAllYaoJiuTiles()
 }
 
 func CanHu(ruleset *Ruleset, hand *gameplay.Hand, tile *gameplay.GameTile) *HuWay {
@@ -381,14 +427,14 @@ func (r *Ruleset) canHu(result *HuWay, currentWay *HuWay, handForCalc *handForCa
 		// Wan
 		if handForCalc.Wans[i] >= 3 {
 			handForCalc.Wans[i] -= 3
-			currentWay.Kezi = append(currentWay.Kezi, tiles.Tile{TileType: tiles.Wan, Number: i + 1})
+			currentWay.Kezi = append(currentWay.Kezi, tiles.GetTileP(tiles.Wan, i+1))
 			r.canHu(result, currentWay, handForCalc)
 			currentWay.Kezi = currentWay.Kezi[:len(currentWay.Kezi)-1]
 			handForCalc.Wans[i] += 3
 		}
 		if currentWay.QueTou == nil && handForCalc.Wans[i] >= 2 {
 			handForCalc.Wans[i] -= 2
-			currentWay.QueTou = &tiles.Tile{TileType: tiles.Wan, Number: i + 1}
+			currentWay.QueTou = tiles.GetTileP(tiles.Wan, i+1).Ptr()
 			r.canHu(result, currentWay, handForCalc)
 			currentWay.QueTou = nil
 			handForCalc.Wans[i] += 2
@@ -397,7 +443,7 @@ func (r *Ruleset) canHu(result *HuWay, currentWay *HuWay, handForCalc *handForCa
 			handForCalc.Wans[i] -= 1
 			handForCalc.Wans[i+1] -= 1
 			handForCalc.Wans[i+2] -= 1
-			currentWay.Shunzi = append(currentWay.Shunzi, tiles.Tile{TileType: tiles.Wan, Number: i + 1})
+			currentWay.Shunzi = append(currentWay.Shunzi, tiles.GetTileP(tiles.Wan, i+1))
 			r.canHu(result, currentWay, handForCalc)
 			currentWay.Shunzi = currentWay.Shunzi[:len(currentWay.Shunzi)-1]
 			handForCalc.Wans[i] += 1
@@ -407,14 +453,14 @@ func (r *Ruleset) canHu(result *HuWay, currentWay *HuWay, handForCalc *handForCa
 		// Tong
 		if handForCalc.Tongs[i] >= 3 {
 			handForCalc.Tongs[i] -= 3
-			currentWay.Kezi = append(currentWay.Kezi, tiles.Tile{TileType: tiles.Tong, Number: i + 1})
+			currentWay.Kezi = append(currentWay.Kezi, tiles.GetTileP(tiles.Tong, i+1))
 			r.canHu(result, currentWay, handForCalc)
 			currentWay.Kezi = currentWay.Kezi[:len(currentWay.Kezi)-1]
 			handForCalc.Tongs[i] += 3
 		}
 		if currentWay.QueTou == nil && handForCalc.Tongs[i] >= 2 {
 			handForCalc.Tongs[i] -= 2
-			currentWay.QueTou = &tiles.Tile{TileType: tiles.Tong, Number: i + 1}
+			currentWay.QueTou = tiles.GetTileP(tiles.Tong, i+1).Ptr()
 			r.canHu(result, currentWay, handForCalc)
 			currentWay.QueTou = nil
 			handForCalc.Tongs[i] += 2
@@ -423,7 +469,7 @@ func (r *Ruleset) canHu(result *HuWay, currentWay *HuWay, handForCalc *handForCa
 			handForCalc.Tongs[i] -= 1
 			handForCalc.Tongs[i+1] -= 1
 			handForCalc.Tongs[i+2] -= 1
-			currentWay.Shunzi = append(currentWay.Shunzi, tiles.Tile{TileType: tiles.Tong, Number: i + 1})
+			currentWay.Shunzi = append(currentWay.Shunzi, tiles.GetTileP(tiles.Tong, i+1))
 			r.canHu(result, currentWay, handForCalc)
 			currentWay.Shunzi = currentWay.Shunzi[:len(currentWay.Shunzi)-1]
 			handForCalc.Tongs[i] += 1
@@ -433,14 +479,14 @@ func (r *Ruleset) canHu(result *HuWay, currentWay *HuWay, handForCalc *handForCa
 		// Suo
 		if handForCalc.Suos[i] >= 3 {
 			handForCalc.Suos[i] -= 3
-			currentWay.Kezi = append(currentWay.Kezi, tiles.Tile{TileType: tiles.Suo, Number: i + 1})
+			currentWay.Kezi = append(currentWay.Kezi, tiles.GetTileP(tiles.Suo, i+1))
 			r.canHu(result, currentWay, handForCalc)
 			currentWay.Kezi = currentWay.Kezi[:len(currentWay.Kezi)-1]
 			handForCalc.Suos[i] += 3
 		}
 		if currentWay.QueTou == nil && handForCalc.Suos[i] >= 2 {
 			handForCalc.Suos[i] -= 2
-			currentWay.QueTou = &tiles.Tile{TileType: tiles.Suo, Number: i + 1}
+			currentWay.QueTou = tiles.GetTileP(tiles.Suo, i+1).Ptr()
 			r.canHu(result, currentWay, handForCalc)
 			currentWay.QueTou = nil
 			handForCalc.Suos[i] += 2
@@ -449,7 +495,7 @@ func (r *Ruleset) canHu(result *HuWay, currentWay *HuWay, handForCalc *handForCa
 			handForCalc.Suos[i] -= 1
 			handForCalc.Suos[i+1] -= 1
 			handForCalc.Suos[i+2] -= 1
-			currentWay.Shunzi = append(currentWay.Shunzi, tiles.Tile{TileType: tiles.Suo, Number: i + 1})
+			currentWay.Shunzi = append(currentWay.Shunzi, tiles.GetTileP(tiles.Suo, i+1))
 			r.canHu(result, currentWay, handForCalc)
 			currentWay.Shunzi = currentWay.Shunzi[:len(currentWay.Shunzi)-1]
 			handForCalc.Suos[i] += 1
@@ -461,14 +507,14 @@ func (r *Ruleset) canHu(result *HuWay, currentWay *HuWay, handForCalc *handForCa
 		// Zi
 		if handForCalc.Zis[i] >= 3 {
 			handForCalc.Zis[i] -= 3
-			currentWay.Kezi = append(currentWay.Kezi, tiles.Tile{TileType: tiles.Zi, Number: i + 1})
+			currentWay.Kezi = append(currentWay.Kezi, tiles.GetTileP(tiles.Zi, i+1))
 			r.canHu(result, currentWay, handForCalc)
 			currentWay.Kezi = currentWay.Kezi[:len(currentWay.Kezi)-1]
 			handForCalc.Zis[i] += 3
 		}
 		if currentWay.QueTou == nil && handForCalc.Zis[i] >= 2 {
 			handForCalc.Zis[i] -= 2
-			currentWay.QueTou = &tiles.Tile{TileType: tiles.Zi, Number: i + 1}
+			currentWay.QueTou = tiles.GetTileP(tiles.Zi, i+1).Ptr()
 			r.canHu(result, currentWay, handForCalc)
 			currentWay.QueTou = nil
 			handForCalc.Zis[i] += 2
