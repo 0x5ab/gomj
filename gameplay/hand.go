@@ -180,6 +180,7 @@ func (h *Hand) GetAnGangTiles() []tiles.Tile {
 	return tiles
 }
 
+// GetKeZiTiles returns all tiles representing a peng or gang
 func (h *Hand) GetKeZiTiles() []tiles.Tile {
 	var tiles []tiles.Tile
 	for _, f := range h.Fulu {

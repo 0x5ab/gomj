@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/0x5ab/gomj/gameplay"
 	"github.com/0x5ab/gomj/ruleset"
@@ -10,10 +11,18 @@ import (
 	"github.com/0x5ab/gomj/wind"
 )
 
+func timer(name string) func() {
+	start := time.Now()
+	return func() {
+		fmt.Printf("%s took %v\n", name, time.Since(start))
+	}
+}
+
 func main() {
+	defer timer("main")()
 	// t, err := tiles.ParseTiles("1z1z1z2z2z2z5z")
 	// t, err := tiles.ParseTiles("3m3m3m4m5m5m6m6m7m7m8m8m8m")
-	t, err := tiles.ParseTiles("1m1m1m1m2m3m5m6m7m8m9m9m9m")
+	t, err := tiles.ParseTiles("1112345678999m")
 	if err != nil {
 		panic(err)
 	}
@@ -46,7 +55,7 @@ func main() {
 			if yizhong.(ruleset_jp.JapaneseMahjongYiZhong).IsYakuman() {
 				fmt.Print("(役满)，")
 			} else {
-				fmt.Printf("(%d番)，", yizhong.GetFan(hand))
+				fmt.Printf("(%d番)，", yizhong.GetFan(huway))
 			}
 		}
 		fmt.Printf("| %d符", huway.Point)

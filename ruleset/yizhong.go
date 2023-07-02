@@ -1,12 +1,8 @@
 package ruleset
 
-import (
-	"github.com/0x5ab/gomj/gameplay"
-)
-
 type YiZhong interface {
 	GetId() string
-	GetFan(hand *gameplay.Hand) int
+	GetFan(huWay *HuWay) int
 	GetName() string
 	GetDescription() string
 	IsYiZhong(huWay *HuWay) bool

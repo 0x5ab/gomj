@@ -1,6 +1,8 @@
 package tiles
 
 import (
+	"sort"
+
 	mapset "github.com/deckarep/golang-set/v2"
 )
 
@@ -18,4 +20,17 @@ func CountDuplicateTiles(tiles []Tile) int {
 		tileSet.Add(tile.Number)
 	}
 	return len(tiles) - tileSet.Cardinality()
+}
+
+func SortTilesInPlace(tiles []Tile) {
+	sort.Slice(tiles, func(i, j int) bool {
+		return tiles[i].Id < tiles[j].Id
+	})
+}
+
+func SortTiles(tiles []Tile) []Tile {
+	t := make([]Tile, len(tiles))
+	copy(t, tiles)
+	SortTilesInPlace(t)
+	return t
 }

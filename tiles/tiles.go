@@ -2,7 +2,6 @@ package tiles
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/0x5ab/gomj/errors"
 	"github.com/0x5ab/gomj/utils"
@@ -189,24 +188,4 @@ func GetTileP(t TileType, number int) Tile {
 		panic(err)
 	}
 	return tile
-}
-
-func ParseTile(t string) (Tile, error) {
-	n, err := strconv.Atoi(t[0:1])
-	if err != nil {
-		return Invalid, err
-	}
-	return GetTile(TileType(t[1]), n)
-}
-
-func ParseTiles(tiles string) ([]Tile, error) {
-	var ret []Tile
-	for i := 0; i < len(tiles); i += 2 {
-		t, err := ParseTile(tiles[i : i+2])
-		if err != nil {
-			return nil, err
-		}
-		ret = append(ret, t)
-	}
-	return ret, nil
 }

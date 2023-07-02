@@ -1,9 +1,8 @@
 package ruleset_jp
 
 import (
-	"math"
-
 	"github.com/0x5ab/gomj/ruleset"
+	"github.com/0x5ab/gomj/utils"
 )
 
 type JapaneseMahjongFuRuleset struct{}
@@ -66,5 +65,5 @@ func (r *JapaneseMahjongFuRuleset) GetPoint(huWay *ruleset.HuWay) int {
 			fu += 8
 		}
 	}
-	return int(math.Round(math.Ceil(float64(fu)/10) * 10))
+	return (fu/10 + utils.BoolToInt(fu%10 != 0)) * 10
 }

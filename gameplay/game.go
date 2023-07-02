@@ -10,7 +10,7 @@ type Game struct {
 	DrawsRemaining int
 }
 
-func (g *Game) IsLastDraw() bool {
-	// todo
+// IsLastTurn returns true if the current turn is the last turn of the game (last draw and last discard).
+func (g *Game) IsLastTurn() bool {
 	return g.DrawsRemaining == 0
 }
