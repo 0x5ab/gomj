@@ -262,7 +262,7 @@ func (m *MenQianZimo) GetDescription() string {
 }
 
 func (m *MenQianZimo) IsYiZhong(huWay *ruleset.HuWay) bool {
-	return huWay.IsMenQing() && huWay.GotTile.IsJustDrawn()
+	return huWay.IsMenQing() && huWay.IsZiMo()
 }
 
 // #endregion

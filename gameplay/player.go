@@ -10,5 +10,5 @@ type Player struct {
 }
 
 func (p *Player) Equal(p2 *Player) bool {
-	return p2 != nil && p.Id == p2.Id
+	return p != nil && p2 != nil && p.Id == p2.Id
 }

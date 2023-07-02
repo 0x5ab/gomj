@@ -252,7 +252,7 @@ func (h *HuWay) IsMenQing() bool {
 }
 
 func (h *HuWay) IsZiMo() bool {
-	return h.GotTile.Player.Equal(h.Hand.Player) && h.GotTile.State() == gameplay.GameTileDrawn
+	return h.GotTile.Player.Equal(h.Hand.Player) && h.GotTile.IsJustDrawn()
 }
 
 func (h *HuWay) IsRiichi() bool {

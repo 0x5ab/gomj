@@ -28,7 +28,9 @@ func main() {
 	}
 	fmt.Printf("%+v\n", t)
 	// hand := gameplay.Hand{Tiles: t, Fulu: []gameplay.Fulu{{StartTile: tiles.Bai, Type: gameplay.Peng}, {StartTile: tiles.Fa, Type: gameplay.Peng}}}
-	hand := gameplay.NewHand(&gameplay.Game{Wind: wind.East}, &gameplay.Player{Wind: wind.East})
+	game := &gameplay.Game{Wind: wind.East}
+	player := &gameplay.Player{Id: 3, Wind: wind.East, Game: game}
+	hand := gameplay.NewHand(game, player)
 	hand.Tiles = t
 	cnt := make(map[int]int)
 	for _, tile := range hand.Tiles {
@@ -42,7 +44,8 @@ func main() {
 		if cnt[tt.Id] >= 4 {
 			continue
 		}
-		huway := ruleset.CanHu(ruleset_jp.JapaneseMahjongRuleset, hand, &gameplay.GameTile{Tile: tt})
+		tile := &gameplay.GameTile{Tile: tt, Player: player}
+		huway := ruleset.CanHu(ruleset_jp.JapaneseMahjongRuleset, hand, tile)
 		if !huway.IsValid() {
 			continue
 		}

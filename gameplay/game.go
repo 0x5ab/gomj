@@ -5,6 +5,7 @@ import (
 )
 
 type Game struct {
+	Id             int
 	Wind           wind.Wind
 	Round          int
 	DrawsRemaining int
