@@ -17,6 +17,36 @@ const (
 	Zi   TileType = 'z'
 )
 
+func (t TileType) Index() int {
+	switch t {
+	case Wan:
+		return 0
+	case Tong:
+		return 1
+	case Suo:
+		return 2
+	case Zi:
+		return 3
+	default:
+		panic(errors.ErrInvalidTileType)
+	}
+}
+
+func TileTypeFromIndex(i int) TileType {
+	switch i {
+	case 0:
+		return Wan
+	case 1:
+		return Tong
+	case 2:
+		return Suo
+	case 3:
+		return Zi
+	default:
+		panic(errors.ErrInvalidTileType)
+	}
+}
+
 type Tile struct {
 	Id       int
 	TileType TileType

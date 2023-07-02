@@ -36,7 +36,7 @@ const (
 	IdHunQuanDaiYao = "jp_hqdy"
 	IdHunLaoTou     = "jp_hlt"
 	IdXiaoSanYuan   = "jp_xsy"
-	IdDoubleRiiChi  = "jp_drc"
+	IdDoubleRiichi  = "jp_drc"
 
 	// 3番
 	IdHunYiSe        = "jp_hys"
@@ -154,7 +154,16 @@ var (
 			&HeDi{},
 			&SanSeTongShun{},
 			&SanSeTongKe{},
+			&YiTiaoLong{},
 			&ToiToi{},
+			&SanAnKe{},
+			&SanGangZi{},
+			&QiDuiZi{},
+			&HunQuanDaiYao{},
+			&HunLaoTou{},
+			&XiaoSanYuan{},
+			&DoubleRiichi{},
+			&HunYiSe{},
 			&QingYiSe{},
 			&ShiSanYao{},
 			&ShiSanYaoDanJi{},
@@ -194,7 +203,7 @@ func (r *RiiChi) GetDescription() string {
 }
 
 func (r *RiiChi) IsYiZhong(huWay *ruleset.HuWay) bool {
-	return huWay.IsRiichi()
+	return huWay.IsRiichi() && huWay.Hand.DrawNumber != 1
 }
 
 // #endregion
@@ -616,6 +625,7 @@ func (s *SanSeTongShun) IsYiZhong(huWay *ruleset.HuWay) bool {
 	if huWay.GetShunZiCount() < 3 {
 		return false
 	}
+	// TODO: needs to be optimized
 	hasStartTiles := make(map[int]int)
 	hasWan := false
 	hasSuo := false
@@ -702,6 +712,365 @@ func (s *SanSeTongKe) IsYiZhong(huWay *ruleset.HuWay) bool {
 		}
 	}
 	return false
+}
+
+// #endregion
+
+// #region yitiaolong
+
+type YiTiaoLong struct{}
+
+func (y *YiTiaoLong) GetId() string {
+	return IdYiTiaoLong
+}
+
+func (y *YiTiaoLong) GetFan(huWay *ruleset.HuWay) int {
+	return GetFuLuMinusOneFan(2, huWay)
+}
+
+func (y *YiTiaoLong) IsYakuman() bool {
+	return false
+}
+
+func (y *YiTiaoLong) GetName() string {
+	return "一气通贯"
+}
+
+func (y *YiTiaoLong) NeedMenQing() bool {
+	return false
+}
+
+func (y *YiTiaoLong) GetDescription() string {
+	return "同一色牌中（筒索万），一至九各有一只，组成三副顺子"
+}
+
+func (y *YiTiaoLong) IsYiZhong(huWay *ruleset.HuWay) bool {
+	if huWay.GetShunZiCount() < 3 {
+		return false
+	}
+	colors := [3]int{}
+	color := -1
+	for _, shunZi := range huWay.GetAllShunZi() {
+		colors[shunZi.TileType.Index()]++
+		if colors[shunZi.TileType.Index()] == 3 {
+			color = shunZi.TileType.Index()
+			break
+		}
+	}
+	if color == -1 {
+		return false
+	}
+	tileType := tiles.TileTypeFromIndex(color)
+	hasOne := false
+	hasFour := false
+	hasSeven := false
+	for _, shunZi := range huWay.GetAllShunZiWithTileType(tileType) {
+		switch shunZi.Number {
+		case 1:
+			hasOne = true
+		case 4:
+			hasFour = true
+		case 7:
+			hasSeven = true
+		}
+	}
+	return hasOne && hasFour && hasSeven
+}
+
+// #endregion
+
+// #region sananke
+
+type SanAnKe struct{}
+
+func (s *SanAnKe) GetId() string {
+	return IdSanAnKe
+}
+
+func (s *SanAnKe) GetFan(huWay *ruleset.HuWay) int {
+	return 2
+}
+
+func (s *SanAnKe) IsYakuman() bool {
+	return false
+}
+
+func (s *SanAnKe) GetName() string {
+	return "三暗刻"
+}
+
+func (s *SanAnKe) NeedMenQing() bool {
+	return false
+}
+
+func (s *SanAnKe) GetDescription() string {
+	return "胡牌时有三组暗刻，其中包含暗杠也可以。"
+}
+
+func (s *SanAnKe) IsYiZhong(huWay *ruleset.HuWay) bool {
+	return huWay.GetAnKeCount() >= 3
+}
+
+// #endregion
+
+// #region sangangzi
+
+type SanGangZi struct{}
+
+func (s *SanGangZi) GetId() string {
+	return IdSanGangZi
+}
+
+func (s *SanGangZi) GetFan(huWay *ruleset.HuWay) int {
+	return 2
+}
+
+func (s *SanGangZi) IsYakuman() bool {
+	return false
+}
+
+func (s *SanGangZi) GetName() string {
+	return "三杠子"
+}
+
+func (s *SanGangZi) NeedMenQing() bool {
+	return false
+}
+
+func (s *SanGangZi) GetDescription() string {
+	return "胡牌时有三组杠子"
+}
+
+func (s *SanGangZi) IsYiZhong(huWay *ruleset.HuWay) bool {
+	return huWay.Hand.GetGangCount() >= 3
+}
+
+// #endregion
+
+// #region qiduizi
+
+type QiDuiZi struct{}
+
+func (q *QiDuiZi) GetId() string {
+	return IdQiDuiZi
+}
+
+func (q *QiDuiZi) GetFan(huWay *ruleset.HuWay) int {
+	return 2
+}
+
+func (q *QiDuiZi) IsYakuman() bool {
+	return false
+}
+
+func (q *QiDuiZi) GetName() string {
+	return "七对子"
+}
+
+func (q *QiDuiZi) NeedMenQing() bool {
+	return true
+}
+
+func (q *QiDuiZi) GetDescription() string {
+	return "由7个对子组成的和牌"
+}
+
+func (q *QiDuiZi) IsYiZhong(huWay *ruleset.HuWay) bool {
+	return huWay.IsQiDui
+}
+
+// #endregion
+
+// #region hunquandaiyao
+
+type HunQuanDaiYao struct{}
+
+func (h *HunQuanDaiYao) GetId() string {
+	return IdHunQuanDaiYao
+}
+
+func (h *HunQuanDaiYao) GetFan(huWay *ruleset.HuWay) int {
+	return GetFuLuMinusOneFan(2, huWay)
+}
+
+func (h *HunQuanDaiYao) IsYakuman() bool {
+	return false
+}
+
+func (h *HunQuanDaiYao) GetName() string {
+	return "混全带幺九"
+}
+
+func (h *HunQuanDaiYao) NeedMenQing() bool {
+	return false
+}
+
+func (h *HunQuanDaiYao) GetDescription() string {
+	return "所有顺子、刻子、杠子、雀头都包含幺九牌。"
+}
+
+func (h *HunQuanDaiYao) IsYiZhong(huWay *ruleset.HuWay) bool {
+	for _, shunZi := range huWay.GetAllShunZi() {
+		if shunZi.Number != 1 && shunZi.Number != 7 {
+			return false
+		}
+	}
+	for _, keZi := range huWay.GetAllKeZi() {
+		if !keZi.IsYaoJiu() {
+			return false
+		}
+	}
+	return huWay.QueTou.IsYaoJiu()
+}
+
+// #endregion
+
+// #region hunlaotou
+
+type HunLaoTou struct{}
+
+func (h *HunLaoTou) GetId() string {
+	return IdHunLaoTou
+}
+
+func (h *HunLaoTou) GetFan(huWay *ruleset.HuWay) int {
+	return 2
+}
+
+func (h *HunLaoTou) IsYakuman() bool {
+	return false
+}
+
+func (h *HunLaoTou) GetName() string {
+	return "混老头"
+}
+
+func (h *HunLaoTou) NeedMenQing() bool {
+	return false
+}
+
+func (h *HunLaoTou) GetDescription() string {
+	return "由序数牌的1、9组成的和牌"
+}
+
+func (h *HunLaoTou) IsYiZhong(huWay *ruleset.HuWay) bool {
+	if huWay.GetShunZiCount() > 0 {
+		return false
+	}
+	for _, keZi := range huWay.GetAllKeZi() {
+		if !keZi.IsYaoJiu() {
+			return false
+		}
+	}
+	return huWay.QueTou.IsYaoJiu()
+}
+
+// #endregion
+
+// #region xiaosanyuan
+
+type XiaoSanYuan struct{}
+
+func (x *XiaoSanYuan) GetId() string {
+	return IdXiaoSanYuan
+}
+
+func (x *XiaoSanYuan) GetFan(huWay *ruleset.HuWay) int {
+	return 2
+}
+
+func (x *XiaoSanYuan) IsYakuman() bool {
+	return false
+}
+
+func (x *XiaoSanYuan) GetName() string {
+	return "小三元"
+}
+
+func (x *XiaoSanYuan) NeedMenQing() bool {
+	return false
+}
+
+func (x *XiaoSanYuan) GetDescription() string {
+	return "其中两组三元牌为刻子或杠子，另外一组为对子"
+}
+
+func (x *XiaoSanYuan) IsYiZhong(huWay *ruleset.HuWay) bool {
+	cnt := 0
+	for _, keZi := range huWay.GetAllKeZi() {
+		if keZi.IsSanYuan() {
+			cnt++
+		}
+	}
+	return cnt == 2 && huWay.QueTou.IsSanYuan()
+}
+
+// #endregion
+
+// #region doubleriichi
+
+type DoubleRiichi struct{}
+
+func (d *DoubleRiichi) GetId() string {
+	return IdDoubleRiichi
+}
+
+func (d *DoubleRiichi) GetFan(huWay *ruleset.HuWay) int {
+	return 2
+}
+
+func (d *DoubleRiichi) IsYakuman() bool {
+	return false
+}
+
+func (d *DoubleRiichi) GetName() string {
+	return "两立直"
+}
+
+func (d *DoubleRiichi) NeedMenQing() bool {
+	return true
+}
+
+func (d *DoubleRiichi) GetDescription() string {
+	return "第一巡牌时即宣告“立直”，非第一巡当做一般“立直”处理"
+}
+
+func (d *DoubleRiichi) IsYiZhong(huWay *ruleset.HuWay) bool {
+	return huWay.IsRiichi() && huWay.Hand.DrawNumber == 1
+}
+
+// #endregion
+
+// #region hunyise
+
+type HunYiSe struct{}
+
+func (h *HunYiSe) GetId() string {
+	return IdHunYiSe
+}
+
+func (h *HunYiSe) GetFan(huWay *ruleset.HuWay) int {
+	return GetFuLuMinusOneFan(3, huWay)
+}
+
+func (h *HunYiSe) IsYakuman() bool {
+	return false
+}
+
+func (h *HunYiSe) GetName() string {
+	return "混一色"
+}
+
+func (h *HunYiSe) NeedMenQing() bool {
+	return false
+}
+
+func (h *HunYiSe) GetDescription() string {
+	return "由一种花色的牌及字牌组成的和牌"
+}
+
+func (h *HunYiSe) IsYiZhong(huWay *ruleset.HuWay) bool {
+	return huWay.Hand.IsHunYiSe()
 }
 
 // #endregion
@@ -837,7 +1206,7 @@ func (s *SiAnKe) GetDescription() string {
 }
 
 func (s *SiAnKe) IsYiZhong(huWay *ruleset.HuWay) bool {
-	return huWay.GetKeZiCountWithoutPeng() == 4 && huWay.IsGotTileQueTou()
+	return huWay.GetAnKeCount() == 4 && huWay.IsGotTileQueTou()
 }
 
 // #endregion

@@ -73,6 +73,8 @@ func (f *Fulu) HumanReadableString() string {
 	return ""
 }
 
+// TODO: optimize: do not recalculate stats for fulu every time
+
 type Hand struct {
 	Game             *Game
 	Player           *Player // the owner of this hand
@@ -116,6 +118,16 @@ func (h *Hand) GetGangCount() int {
 	return count
 }
 
+func (h *Hand) GetMingGangCount() int {
+	count := 0
+	for _, f := range h.Fulu {
+		if f.IsGang() && !f.IsAnGang() {
+			count++
+		}
+	}
+	return count
+}
+
 func (h *Hand) GetAnGangCount() int {
 	count := 0
 	for _, f := range h.Fulu {
@@ -137,7 +149,7 @@ func (h *Hand) GetChiCount() int {
 }
 
 func (h *Hand) GetFuluCount() int {
-	return h.GetPengCount() + h.GetGangCount() + h.GetChiCount()
+	return h.GetPengCount() + h.GetMingGangCount() + h.GetChiCount()
 }
 
 func (h *Hand) GetPengTiles() []tiles.Tile {
@@ -218,6 +230,32 @@ func (h *Hand) IsQingYiSe() bool {
 		}
 	}
 	return true
+}
+
+func (h *Hand) IsHunYiSe() bool {
+	var tileType tiles.TileType = 0
+	hasZi := false
+	for _, t := range h.Tiles {
+		if tileType == 0 {
+			tileType = t.TileType
+		} else if tileType != t.TileType && !t.IsZi() {
+			return false
+		}
+		if t.IsZi() {
+			hasZi = true
+		}
+	}
+	for _, f := range h.Fulu {
+		if tileType == 0 {
+			tileType = f.StartTile.TileType
+		} else if tileType != f.StartTile.TileType && !f.StartTile.IsZi() {
+			return false
+		}
+		if f.StartTile.IsZi() {
+			hasZi = true
+		}
+	}
+	return tileType != 0 && hasZi
 }
 
 func (h *Hand) IsZiYiSe() bool {

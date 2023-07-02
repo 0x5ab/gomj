@@ -102,24 +102,25 @@ func (h *handForCalc) isHu() bool {
 	return true
 }
 
+// 日麻里不能有两个相同的对子，但国标可以，需要改进
 func (h *handForCalc) isQiDui() bool {
 	for _, wan := range h.Wans {
-		if wan%2 != 0 {
+		if wan != 2 {
 			return false
 		}
 	}
 	for _, tong := range h.Tongs {
-		if tong%2 != 0 {
+		if tong != 2 {
 			return false
 		}
 	}
 	for _, suo := range h.Suos {
-		if suo%2 != 0 {
+		if suo != 2 {
 			return false
 		}
 	}
 	for _, zi := range h.Zis {
-		if zi%2 != 0 {
+		if zi != 2 {
 			return false
 		}
 	}
@@ -213,11 +214,11 @@ func (h *HuWay) Clone() HuWay {
 }
 
 func (h *HuWay) GetKeZiCount() int {
-	return h.GetKeZiCountWithoutPeng() + h.Hand.GetPengCount() + h.Hand.GetGangCount()
+	return len(h.Kezi) + h.Hand.GetPengCount() + h.Hand.GetGangCount()
 }
 
-func (h *HuWay) GetKeZiCountWithoutPeng() int {
-	return len(h.Kezi)
+func (h *HuWay) GetAnKeCount() int {
+	return len(h.Kezi) + h.Hand.GetAnGangCount()
 }
 
 // GetAllKeZi returns all kezi in the hand, including peng and gang
@@ -241,6 +242,36 @@ func (h *HuWay) GetAllShunZi() []tiles.Tile {
 	shunZi = append(shunZi, h.Hand.GetChiTiles()...)
 	shunZi = append(shunZi, h.Shunzi...)
 	return shunZi
+}
+
+func (h *HuWay) GetAllShunZiWithTileType(tileType tiles.TileType) []tiles.Tile {
+	shunZi := make([]tiles.Tile, 0, h.GetShunZiCount())
+	for _, t := range h.Shunzi {
+		if t.TileType == tileType {
+			shunZi = append(shunZi, t)
+		}
+	}
+	for _, t := range h.Hand.GetChiTiles() {
+		if t.TileType == tileType {
+			shunZi = append(shunZi, t)
+		}
+	}
+	return shunZi
+}
+
+func (h *HuWay) GetAllKeZiWithTileType(tileType tiles.TileType) []tiles.Tile {
+	keZi := make([]tiles.Tile, 0, h.GetKeZiCount())
+	for _, t := range h.Kezi {
+		if t.TileType == tileType {
+			keZi = append(keZi, t)
+		}
+	}
+	for _, t := range h.Hand.GetKeZiTiles() {
+		if t.TileType == tileType {
+			keZi = append(keZi, t)
+		}
+	}
+	return keZi
 }
 
 func (h *HuWay) IsValid() bool {
