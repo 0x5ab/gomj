@@ -9,7 +9,7 @@ import (
 func HasDuplicateTile(tiles []Tile) bool {
 	tileSet := mapset.NewSet[int]()
 	for _, tile := range tiles {
-		tileSet.Add(tile.Number)
+		tileSet.Add(tile.Id)
 	}
 	return tileSet.Cardinality() != len(tiles)
 }
@@ -17,7 +17,7 @@ func HasDuplicateTile(tiles []Tile) bool {
 func CountDuplicateTiles(tiles []Tile) int {
 	tileSet := mapset.NewSet[int]()
 	for _, tile := range tiles {
-		tileSet.Add(tile.Number)
+		tileSet.Add(tile.Id)
 	}
 	return len(tiles) - tileSet.Cardinality()
 }

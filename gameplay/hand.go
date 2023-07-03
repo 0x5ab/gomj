@@ -49,7 +49,7 @@ func (f *Fulu) GetTiles() []tiles.Tile {
 	return nil
 }
 
-func (f *Fulu) String() string {
+func (f Fulu) String() string {
 	switch f.Type {
 	case Chi:
 		return fmt.Sprintf("chi %s%s%s", f.StartTile.String(), f.StartTile.Next().String(), f.StartTile.Next().Next().String())
@@ -95,7 +95,7 @@ func NewHand(g *Game, p *Player) *Hand {
 }
 
 func (h *Hand) String() string {
-	return fmt.Sprintf("%v %v", h.Tiles, h.Fulu)
+	return fmt.Sprintf("tiles: %v, fulu: %v", h.Tiles, h.Fulu)
 }
 
 func (h *Hand) GetPengCount() int {

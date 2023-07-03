@@ -105,21 +105,33 @@ func (h *handForCalc) isHu() bool {
 // 日麻里不能有两个相同的对子，但国标可以，需要改进
 func (h *handForCalc) isQiDui() bool {
 	for _, wan := range h.Wans {
+		if wan == 0 {
+			continue
+		}
 		if wan != 2 {
 			return false
 		}
 	}
 	for _, tong := range h.Tongs {
+		if tong == 0 {
+			continue
+		}
 		if tong != 2 {
 			return false
 		}
 	}
 	for _, suo := range h.Suos {
+		if suo == 0 {
+			continue
+		}
 		if suo != 2 {
 			return false
 		}
 	}
 	for _, zi := range h.Zis {
+		if zi == 0 {
+			continue
+		}
 		if zi != 2 {
 			return false
 		}
@@ -295,7 +307,7 @@ func (h *HuWay) IsTanYao() bool {
 }
 
 func (h *HuWay) IsQingYiSe() bool {
-	return h.Hand.IsQingYiSe()
+	return h.Hand.IsQingYiSe() && h.GotTile.Tile.TileType == h.Hand.Tiles[0].TileType
 }
 
 // IsGotTileQueTou returns true if the got tile is the same as the que tou (is 单钓).
@@ -447,12 +459,6 @@ func isShiSanYaoDanJi(handForCalc handForCalc, tile tiles.Tile) bool {
 func CanHu(ruleset *Ruleset, hand *gameplay.Hand, tile *gameplay.GameTile) *HuWay {
 	handForCalc := handToHandForCalc(hand, tile.Tile)
 	huWay := NewHuWay(hand, tile)
-	if handForCalc.isQiDui() {
-		huWay.isValid = true
-		huWay.IsQiDui = true
-		huWay.CalculateStats(ruleset)
-		return &huWay
-	}
 	if isShiSanYaoDanJi(handForCalc, tile.Tile) {
 		// huWays.Ways = getShiSanYaoDanJiWays()
 		huWay.isValid = true
@@ -469,6 +475,12 @@ func CanHu(ruleset *Ruleset, hand *gameplay.Hand, tile *gameplay.GameTile) *HuWa
 		return &huWay
 	}
 	result := NewHuWay(hand, tile)
+	if handForCalc.isQiDui() {
+		result.IsQiDui = true
+		result.isValid = true
+		result.QueTou = &tiles.Invalid
+		result.CalculateStats(ruleset)
+	}
 	alreadyChecked := mapset.NewSet[string]()
 	ruleset.canHu(&result, alreadyChecked, &huWay, &handForCalc)
 	return &result

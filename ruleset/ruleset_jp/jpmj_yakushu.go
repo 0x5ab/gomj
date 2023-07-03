@@ -64,26 +64,30 @@ const (
 	IdDiHu           = "jp_dh"
 )
 
-func ContainsYiZhong(yiZhongs []JapaneseMahjongYiZhong, yiZhongId string) bool {
+func YakuEquals(y JapaneseMahjongYaku, yid string) bool {
+	return y.GetId() == yid
+}
+
+func ContainsYiZhong(yiZhongs []JapaneseMahjongYaku, yakuId string) bool {
 	for _, y := range yiZhongs {
-		if y.GetId() == IdToiToi {
+		if YakuEquals(y, yakuId) {
 			return true
 		}
 	}
 	return false
 }
 
-func FilterYakuman(yiZhongs []JapaneseMahjongYiZhong) []JapaneseMahjongYiZhong {
-	var filtered []JapaneseMahjongYiZhong
+func FilterYakuman(yiZhongs []JapaneseMahjongYaku) []JapaneseMahjongYaku {
+	var filtered []JapaneseMahjongYaku
 	for _, y := range yiZhongs {
-		if y.IsYakuman() {
+		if y.YakumanBaisu() > 0 {
 			filtered = append(filtered, y)
 		}
 	}
 	return filtered
 }
 
-func ConvertToYiZhong(jYakus []JapaneseMahjongYiZhong) []ruleset.YiZhong {
+func ConvertToYiZhong(jYakus []JapaneseMahjongYaku) []ruleset.YiZhong {
 	yiZhongs := make([]ruleset.YiZhong, len(jYakus))
 	for i, y := range jYakus {
 		yiZhongs[i] = y
@@ -98,28 +102,28 @@ func GetFuLuMinusOneFan(fan int, huWay *ruleset.HuWay) int {
 	return fan - 1
 }
 
-type JapaneseMahjongYiZhong interface {
+type JapaneseMahjongYaku interface {
 	ruleset.YiZhong
-	IsYakuman() bool
+	YakumanBaisu() int
 	NeedMenQing() bool
 }
 
-type JapaneseMahjongYiZhongRuleset struct {
-	YiZhongs []JapaneseMahjongYiZhong
+type JapaneseMahjongYakuRuleset struct {
+	Yakus []JapaneseMahjongYaku
 }
 
-func (j *JapaneseMahjongYiZhongRuleset) GetAllYiZhongs() []ruleset.YiZhong {
-	yiZhongs := make([]ruleset.YiZhong, len(j.YiZhongs))
-	for i, y := range j.YiZhongs {
+func (j *JapaneseMahjongYakuRuleset) GetAllYiZhongs() []ruleset.YiZhong {
+	yiZhongs := make([]ruleset.YiZhong, len(j.Yakus))
+	for i, y := range j.Yakus {
 		yiZhongs[i] = y
 	}
 	return yiZhongs
 }
 
-func (j *JapaneseMahjongYiZhongRuleset) Check(huWay *ruleset.HuWay) []ruleset.YiZhong {
-	var yakus []JapaneseMahjongYiZhong
+func (j *JapaneseMahjongYakuRuleset) Check(huWay *ruleset.HuWay) []ruleset.YiZhong {
+	var yakus []JapaneseMahjongYaku
 	isMenQing := huWay.Hand.IsMenQing()
-	for _, y := range j.YiZhongs {
+	for _, y := range j.Yakus {
 		if !isMenQing && y.NeedMenQing() {
 			continue
 		}
@@ -132,15 +136,12 @@ func (j *JapaneseMahjongYiZhongRuleset) Check(huWay *ruleset.HuWay) []ruleset.Yi
 		return ConvertToYiZhong(yakumans)
 	}
 
-	if ContainsYiZhong(yakus, IdToiToi) {
-		// check for duplicates
-	}
 	return ConvertToYiZhong(yakus)
 }
 
 var (
-	YakuShuRuleset = &JapaneseMahjongYiZhongRuleset{
-		YiZhongs: []JapaneseMahjongYiZhong{
+	YakuShuRuleset = &JapaneseMahjongYakuRuleset{
+		Yakus: []JapaneseMahjongYaku{
 			&RiiChi{},
 			&Ippatsu{},
 			&TanYao{},
@@ -164,12 +165,21 @@ var (
 			&XiaoSanYuan{},
 			&DoubleRiichi{},
 			&HunYiSe{},
+			&ChunQuanDaiYao{},
+			&ErBeiKou{},
 			&QingYiSe{},
 			&ShiSanYao{},
 			&ShiSanYaoDanJi{},
+			&DaSanYuan{},
 			&SiAnKe{},
 			&SiAnKeDanJi{},
 			&ZiYiSe{},
+			&LvYiSe{},
+			&XiaoSiXi{},
+			&DaSiXi{},
+			&QingLaoTou{},
+			&JiuLianBaoDeng{},
+			&ChunJiuLian{},
 		},
 	}
 )
@@ -186,8 +196,8 @@ func (r *RiiChi) GetFan(_ *ruleset.HuWay) int {
 	return 1
 }
 
-func (r *RiiChi) IsYakuman() bool {
-	return false
+func (r *RiiChi) YakumanBaisu() int {
+	return 0
 }
 
 func (r *RiiChi) GetName() string {
@@ -220,8 +230,8 @@ func (i *Ippatsu) GetFan(_ *ruleset.HuWay) int {
 	return 1
 }
 
-func (i *Ippatsu) IsYakuman() bool {
-	return false
+func (i *Ippatsu) YakumanBaisu() int {
+	return 0
 }
 
 func (i *Ippatsu) GetName() string {
@@ -254,8 +264,8 @@ func (m *MenQianZimo) GetFan(_ *ruleset.HuWay) int {
 	return 1
 }
 
-func (m *MenQianZimo) IsYakuman() bool {
-	return false
+func (m *MenQianZimo) YakumanBaisu() int {
+	return 0
 }
 
 func (m *MenQianZimo) GetName() string {
@@ -288,8 +298,8 @@ func (t *TanYao) GetFan(_ *ruleset.HuWay) int {
 	return 1
 }
 
-func (t *TanYao) IsYakuman() bool {
-	return false
+func (t *TanYao) YakumanBaisu() int {
+	return 0
 }
 
 func (t *TanYao) GetName() string {
@@ -322,8 +332,8 @@ func (p *PinHu) GetFan(huWay *ruleset.HuWay) int {
 	return 1
 }
 
-func (p *PinHu) IsYakuman() bool {
-	return false
+func (p *PinHu) YakumanBaisu() int {
+	return 0
 }
 
 func (p *PinHu) GetName() string {
@@ -356,12 +366,12 @@ func (y *YiBeiKou) GetFan(_ *ruleset.HuWay) int {
 	return 1
 }
 
-func (y *YiBeiKou) IsYakuman() bool {
-	return false
+func (y *YiBeiKou) YakumanBaisu() int {
+	return 0
 }
 
 func (y *YiBeiKou) GetName() string {
-	return "一杯口"
+	return "一盃口"
 }
 
 func (y *YiBeiKou) NeedMenQing() bool {
@@ -396,8 +406,8 @@ func (y *YakuHai) GetFan(huWay *ruleset.HuWay) int {
 	return fan
 }
 
-func (y *YakuHai) IsYakuman() bool {
-	return false
+func (y *YakuHai) YakumanBaisu() int {
+	return 0
 }
 
 func (y *YakuHai) GetName() string {
@@ -435,8 +445,8 @@ func (l *LingShang) GetFan(_ *ruleset.HuWay) int {
 	return 1
 }
 
-func (l *LingShang) IsYakuman() bool {
-	return false
+func (l *LingShang) YakumanBaisu() int {
+	return 0
 }
 
 func (l *LingShang) GetName() string {
@@ -469,8 +479,8 @@ func (q *QiangGang) GetFan(_ *ruleset.HuWay) int {
 	return 1
 }
 
-func (q *QiangGang) IsYakuman() bool {
-	return false
+func (q *QiangGang) YakumanBaisu() int {
+	return 0
 }
 
 func (q *QiangGang) GetName() string {
@@ -503,8 +513,8 @@ func (h *HaiDi) GetFan(_ *ruleset.HuWay) int {
 	return 1
 }
 
-func (h *HaiDi) IsYakuman() bool {
-	return false
+func (h *HaiDi) YakumanBaisu() int {
+	return 0
 }
 
 func (h *HaiDi) GetName() string {
@@ -537,8 +547,8 @@ func (h *HeDi) GetFan(_ *ruleset.HuWay) int {
 	return 1
 }
 
-func (h *HeDi) IsYakuman() bool {
-	return false
+func (h *HeDi) YakumanBaisu() int {
+	return 0
 }
 
 func (h *HeDi) GetName() string {
@@ -571,8 +581,8 @@ func (d *ToiToi) GetFan(_ *ruleset.HuWay) int {
 	return 2
 }
 
-func (d *ToiToi) IsYakuman() bool {
-	return false
+func (d *ToiToi) YakumanBaisu() int {
+	return 0
 }
 
 func (d *ToiToi) GetName() string {
@@ -605,8 +615,8 @@ func (s *SanSeTongShun) GetFan(huWay *ruleset.HuWay) int {
 	return GetFuLuMinusOneFan(2, huWay)
 }
 
-func (s *SanSeTongShun) IsYakuman() bool {
-	return false
+func (s *SanSeTongShun) YakumanBaisu() int {
+	return 0
 }
 
 func (s *SanSeTongShun) GetName() string {
@@ -667,8 +677,8 @@ func (s *SanSeTongKe) GetFan(_ *ruleset.HuWay) int {
 	return 2
 }
 
-func (s *SanSeTongKe) IsYakuman() bool {
-	return false
+func (s *SanSeTongKe) YakumanBaisu() int {
+	return 0
 }
 
 func (s *SanSeTongKe) GetName() string {
@@ -728,8 +738,8 @@ func (y *YiTiaoLong) GetFan(huWay *ruleset.HuWay) int {
 	return GetFuLuMinusOneFan(2, huWay)
 }
 
-func (y *YiTiaoLong) IsYakuman() bool {
-	return false
+func (y *YiTiaoLong) YakumanBaisu() int {
+	return 0
 }
 
 func (y *YiTiaoLong) GetName() string {
@@ -791,8 +801,8 @@ func (s *SanAnKe) GetFan(huWay *ruleset.HuWay) int {
 	return 2
 }
 
-func (s *SanAnKe) IsYakuman() bool {
-	return false
+func (s *SanAnKe) YakumanBaisu() int {
+	return 0
 }
 
 func (s *SanAnKe) GetName() string {
@@ -825,8 +835,8 @@ func (s *SanGangZi) GetFan(huWay *ruleset.HuWay) int {
 	return 2
 }
 
-func (s *SanGangZi) IsYakuman() bool {
-	return false
+func (s *SanGangZi) YakumanBaisu() int {
+	return 0
 }
 
 func (s *SanGangZi) GetName() string {
@@ -859,8 +869,8 @@ func (q *QiDuiZi) GetFan(huWay *ruleset.HuWay) int {
 	return 2
 }
 
-func (q *QiDuiZi) IsYakuman() bool {
-	return false
+func (q *QiDuiZi) YakumanBaisu() int {
+	return 0
 }
 
 func (q *QiDuiZi) GetName() string {
@@ -893,8 +903,8 @@ func (h *HunQuanDaiYao) GetFan(huWay *ruleset.HuWay) int {
 	return GetFuLuMinusOneFan(2, huWay)
 }
 
-func (h *HunQuanDaiYao) IsYakuman() bool {
-	return false
+func (h *HunQuanDaiYao) YakumanBaisu() int {
+	return 0
 }
 
 func (h *HunQuanDaiYao) GetName() string {
@@ -915,12 +925,19 @@ func (h *HunQuanDaiYao) IsYiZhong(huWay *ruleset.HuWay) bool {
 			return false
 		}
 	}
+	hasZi := false
 	for _, keZi := range huWay.GetAllKeZi() {
 		if !keZi.IsYaoJiu() {
 			return false
 		}
+		if keZi.IsZi() {
+			hasZi = true
+		}
 	}
-	return huWay.QueTou.IsYaoJiu()
+	if huWay.QueTou.IsZi() {
+		hasZi = true
+	}
+	return huWay.QueTou.IsYaoJiu() && hasZi
 }
 
 // #endregion
@@ -937,8 +954,8 @@ func (h *HunLaoTou) GetFan(huWay *ruleset.HuWay) int {
 	return 2
 }
 
-func (h *HunLaoTou) IsYakuman() bool {
-	return false
+func (h *HunLaoTou) YakumanBaisu() int {
+	return 0
 }
 
 func (h *HunLaoTou) GetName() string {
@@ -950,7 +967,7 @@ func (h *HunLaoTou) NeedMenQing() bool {
 }
 
 func (h *HunLaoTou) GetDescription() string {
-	return "由序数牌的1、9组成的和牌"
+	return "整副牌型只有幺九牌组成"
 }
 
 func (h *HunLaoTou) IsYiZhong(huWay *ruleset.HuWay) bool {
@@ -979,8 +996,8 @@ func (x *XiaoSanYuan) GetFan(huWay *ruleset.HuWay) int {
 	return 2
 }
 
-func (x *XiaoSanYuan) IsYakuman() bool {
-	return false
+func (x *XiaoSanYuan) YakumanBaisu() int {
+	return 0
 }
 
 func (x *XiaoSanYuan) GetName() string {
@@ -1019,8 +1036,8 @@ func (d *DoubleRiichi) GetFan(huWay *ruleset.HuWay) int {
 	return 2
 }
 
-func (d *DoubleRiichi) IsYakuman() bool {
-	return false
+func (d *DoubleRiichi) YakumanBaisu() int {
+	return 0
 }
 
 func (d *DoubleRiichi) GetName() string {
@@ -1053,8 +1070,8 @@ func (h *HunYiSe) GetFan(huWay *ruleset.HuWay) int {
 	return GetFuLuMinusOneFan(3, huWay)
 }
 
-func (h *HunYiSe) IsYakuman() bool {
-	return false
+func (h *HunYiSe) YakumanBaisu() int {
+	return 0
 }
 
 func (h *HunYiSe) GetName() string {
@@ -1075,6 +1092,94 @@ func (h *HunYiSe) IsYiZhong(huWay *ruleset.HuWay) bool {
 
 // #endregion
 
+// #region chunquandaiyao
+
+type ChunQuanDaiYao struct{}
+
+func (c *ChunQuanDaiYao) GetId() string {
+	return IdChunQuanDaiYao
+}
+
+func (c *ChunQuanDaiYao) GetFan(huWay *ruleset.HuWay) int {
+	return GetFuLuMinusOneFan(3, huWay)
+}
+
+func (c *ChunQuanDaiYao) YakumanBaisu() int {
+	return 0
+}
+
+func (c *ChunQuanDaiYao) GetName() string {
+	return "纯全带幺九"
+}
+
+func (c *ChunQuanDaiYao) NeedMenQing() bool {
+	return false
+}
+
+func (c *ChunQuanDaiYao) GetDescription() string {
+	return "整个牌型所有顺子、刻子、杠子、对子都包含幺九牌，且无字牌"
+}
+
+func (c *ChunQuanDaiYao) IsYiZhong(huWay *ruleset.HuWay) bool {
+	for _, shunZi := range huWay.GetAllShunZi() {
+		if shunZi.Number != 1 && shunZi.Number != 7 {
+			return false
+		}
+	}
+	for _, keZi := range huWay.GetAllKeZi() {
+		if keZi.IsZi() || (keZi.Number != 1 && keZi.Number != 9) {
+			return false
+		}
+	}
+	return !huWay.QueTou.IsZi() && (huWay.QueTou.Number == 1 || huWay.QueTou.Number == 9)
+}
+
+// #endregion
+
+// #region erbeikou
+
+type ErBeiKou struct{}
+
+func (e *ErBeiKou) GetId() string {
+	return IdErBeiKou
+}
+
+func (e *ErBeiKou) GetFan(huWay *ruleset.HuWay) int {
+	return 3
+}
+
+func (e *ErBeiKou) YakumanBaisu() int {
+	return 0
+}
+
+func (e *ErBeiKou) GetName() string {
+	return "二盃口"
+}
+
+func (e *ErBeiKou) NeedMenQing() bool {
+	return true
+}
+
+func (e *ErBeiKou) GetDescription() string {
+	return "两组相同的顺子"
+}
+
+func (e *ErBeiKou) IsYiZhong(huWay *ruleset.HuWay) bool {
+	dup := make(map[int]int)
+	for _, shunZi := range huWay.Shunzi {
+		dup[shunZi.Id]++
+	}
+	total := 0
+	for _, cnt := range dup {
+		if cnt >= 2 {
+			total += cnt / 2
+		}
+	}
+	return total == 2
+}
+
+// #endregion
+
 // #region qingyise
 
 type QingYiSe struct{}
@@ -1087,8 +1192,8 @@ func (q *QingYiSe) GetFan(huWay *ruleset.HuWay) int {
 	return GetFuLuMinusOneFan(6, huWay)
 }
 
-func (q *QingYiSe) IsYakuman() bool {
-	return false
+func (q *QingYiSe) YakumanBaisu() int {
+	return 0
 }
 
 func (q *QingYiSe) GetName() string {
@@ -1121,8 +1226,8 @@ func (s *ShiSanYao) GetFan(_ *ruleset.HuWay) int {
 	return 13
 }
 
-func (s *ShiSanYao) IsYakuman() bool {
-	return true
+func (s *ShiSanYao) YakumanBaisu() int {
+	return 1
 }
 
 func (s *ShiSanYao) GetName() string {
@@ -1155,8 +1260,8 @@ func (s *ShiSanYaoDanJi) GetFan(_ *ruleset.HuWay) int {
 	return 13
 }
 
-func (s *ShiSanYaoDanJi) IsYakuman() bool {
-	return true
+func (s *ShiSanYaoDanJi) YakumanBaisu() int {
+	return 2
 }
 
 func (s *ShiSanYaoDanJi) GetName() string {
@@ -1177,6 +1282,46 @@ func (s *ShiSanYaoDanJi) IsYiZhong(huWay *ruleset.HuWay) bool {
 
 // #endregion
 
+// #region dasanyuan
+
+type DaSanYuan struct{}
+
+func (d *DaSanYuan) GetId() string {
+	return IdDaSanYuan
+}
+
+func (d *DaSanYuan) GetFan(_ *ruleset.HuWay) int {
+	return 13
+}
+
+func (d *DaSanYuan) YakumanBaisu() int {
+	return 1
+}
+
+func (d *DaSanYuan) GetName() string {
+	return "大三元"
+}
+
+func (d *DaSanYuan) NeedMenQing() bool {
+	return false
+}
+
+func (d *DaSanYuan) GetDescription() string {
+	return "全数3组三元牌为刻子或杠子"
+}
+
+func (d *DaSanYuan) IsYiZhong(huWay *ruleset.HuWay) bool {
+	cnt := 0
+	for _, keZi := range huWay.GetAllKeZi() {
+		if keZi.IsSanYuan() {
+			cnt++
+		}
+	}
+	return cnt == 3
+}
+
+// #endregion
+
 // #region sianke
 
 type SiAnKe struct{}
@@ -1189,8 +1334,8 @@ func (s *SiAnKe) GetFan(_ *ruleset.HuWay) int {
 	return 13
 }
 
-func (s *SiAnKe) IsYakuman() bool {
-	return true
+func (s *SiAnKe) YakumanBaisu() int {
+	return 1
 }
 
 func (s *SiAnKe) GetName() string {
@@ -1223,8 +1368,8 @@ func (s *SiAnKeDanJi) GetFan(_ *ruleset.HuWay) int {
 	return 13
 }
 
-func (s *SiAnKeDanJi) IsYakuman() bool {
-	return true
+func (s *SiAnKeDanJi) YakumanBaisu() int {
+	return 2
 }
 
 func (s *SiAnKeDanJi) GetName() string {
@@ -1257,8 +1402,8 @@ func (z *ZiYiSe) GetFan(_ *ruleset.HuWay) int {
 	return 13
 }
 
-func (z *ZiYiSe) IsYakuman() bool {
-	return true
+func (z *ZiYiSe) YakumanBaisu() int {
+	return 1
 }
 
 func (z *ZiYiSe) GetName() string {
@@ -1275,6 +1420,316 @@ func (z *ZiYiSe) GetDescription() string {
 
 func (z *ZiYiSe) IsYiZhong(huWay *ruleset.HuWay) bool {
 	return huWay.Hand.IsZiYiSe()
+}
+
+// #endregion
+
+// #region lvyise
+
+type LvYiSe struct{}
+
+func (l *LvYiSe) GetId() string {
+	return IdLvYiSe
+}
+
+func (l *LvYiSe) GetFan(_ *ruleset.HuWay) int {
+	return 13
+}
+
+func (l *LvYiSe) YakumanBaisu() int {
+	return 1
+}
+
+func (l *LvYiSe) GetName() string {
+	return "绿一色"
+}
+
+func (l *LvYiSe) NeedMenQing() bool {
+	return false
+}
+
+func (l *LvYiSe) GetDescription() string {
+	return "由23468条及发组成的和牌"
+}
+
+func (l *LvYiSe) isTileGreen(tile *tiles.Tile) bool {
+	return tile.Equal(tiles.Fa) ||
+		(tile.TileType == tiles.Suo &&
+			(tile.Number == 2 || tile.Number == 3 || tile.Number == 4 || tile.Number == 6 || tile.Number == 8))
+}
+
+func (l *LvYiSe) IsYiZhong(huWay *ruleset.HuWay) bool {
+	for _, tile := range huWay.GetAllShunZi() {
+		if !tile.Equal(tiles.Suo2) {
+			return false
+		}
+	}
+	for _, tile := range huWay.GetAllKeZi() {
+		if !l.isTileGreen(&tile) {
+			return false
+		}
+	}
+	return l.isTileGreen(huWay.QueTou)
+}
+
+// #endregion
+
+// #region xiaosixi
+
+type XiaoSiXi struct{}
+
+func (x *XiaoSiXi) GetId() string {
+	return IdXiaoSiXi
+}
+
+func (x *XiaoSiXi) GetFan(_ *ruleset.HuWay) int {
+	return 13
+}
+
+func (x *XiaoSiXi) YakumanBaisu() int {
+	return 1
+}
+
+func (x *XiaoSiXi) GetName() string {
+	return "小四喜"
+}
+
+func (x *XiaoSiXi) NeedMenQing() bool {
+	return false
+}
+
+func (x *XiaoSiXi) GetDescription() string {
+	return "3组风牌为刻子或杠子，另1组为对子"
+}
+
+func (x *XiaoSiXi) IsYiZhong(huWay *ruleset.HuWay) bool {
+	cnt := 0
+	for _, keZi := range huWay.GetAllKeZi() {
+		if keZi.IsFeng() {
+			cnt++
+		}
+	}
+	return cnt == 3 && huWay.QueTou.IsFeng()
+}
+
+// #endregion
+
+// #region dasixi
+
+type DaSiXi struct{}
+
+func (d *DaSiXi) GetId() string {
+	return IdDaSiXi
+}
+
+func (d *DaSiXi) GetFan(_ *ruleset.HuWay) int {
+	return 13
+}
+
+func (d *DaSiXi) YakumanBaisu() int {
+	return 2
+}
+
+func (d *DaSiXi) GetName() string {
+	return "大四喜"
+}
+
+func (d *DaSiXi) NeedMenQing() bool {
+	return false
+}
+
+func (d *DaSiXi) GetDescription() string {
+	return "全数4组风牌为刻子或杠子"
+}
+
+func (d *DaSiXi) IsYiZhong(huWay *ruleset.HuWay) bool {
+	cnt := 0
+	for _, keZi := range huWay.GetAllKeZi() {
+		if keZi.IsFeng() {
+			cnt++
+		}
+	}
+	return cnt == 4
+}
+
+// #endregion
+
+// #region qinglaotou
+
+type QingLaoTou struct{}
+
+func (q *QingLaoTou) GetId() string {
+	return IdQingLaoTou
+}
+
+func (q *QingLaoTou) GetFan(_ *ruleset.HuWay) int {
+	return 13
+}
+
+func (q *QingLaoTou) YakumanBaisu() int {
+	return 1
+}
+
+func (q *QingLaoTou) GetName() string {
+	return "清老头"
+}
+
+func (q *QingLaoTou) NeedMenQing() bool {
+	return false
+}
+
+func (q *QingLaoTou) GetDescription() string {
+	return "由序数牌1、9组成的和牌"
+}
+
+func (q *QingLaoTou) IsYiZhong(huWay *ruleset.HuWay) bool {
+	if huWay.GetShunZiCount() > 0 {
+		return false
+	}
+	for _, tile := range huWay.GetAllKeZi() {
+		if tile.IsZi() || (tile.Number != 1 && tile.Number != 9) {
+			return false
+		}
+	}
+	return !huWay.QueTou.IsZi() && (huWay.QueTou.Number == 1 || huWay.QueTou.Number == 9)
+}
+
+// #endregion
+
+// #region jiulianbaodeng
+
+type JiuLianBaoDeng struct{}
+
+func (j *JiuLianBaoDeng) GetId() string {
+	return IdJiuLianBaoDeng
+}
+
+func (j *JiuLianBaoDeng) GetFan(_ *ruleset.HuWay) int {
+	return 13
+}
+
+func (j *JiuLianBaoDeng) YakumanBaisu() int {
+	return 1
+}
+
+func (j *JiuLianBaoDeng) GetName() string {
+	return "九莲宝灯"
+}
+
+func (j *JiuLianBaoDeng) NeedMenQing() bool {
+	return true
+}
+
+func (j *JiuLianBaoDeng) GetDescription() string {
+	return "在万、筒、条中的某一种以111 2345678 999的形式加上同花色的其中任意一张可成立，且必须门清（暗杠亦不可）"
+}
+
+type jiuLianBaoDentType int
+
+const (
+	jiuLianBaoDentTypeNone jiuLianBaoDentType = iota
+	jiuLianBaoDentTypeNormal
+	jiuLianBaoDentTypePure
+)
+
+func isTwoToEightAllOneHelper(tileCount *[9]int) bool {
+	for i := 1; i < 8; i++ {
+		if tileCount[i] != 1 {
+			return false
+		}
+	}
+	return true
+}
+
+func isPureJiuLianBaoDengHelper(tileCount *[9]int) bool {
+	if tileCount[0] == 3 && tileCount[8] == 3 {
+		return isTwoToEightAllOneHelper(tileCount)
+	}
+	return false
+}
+
+func getJiuLianBaoDengType(huWay *ruleset.HuWay) jiuLianBaoDentType {
+	if len(huWay.Hand.Fulu) > 0 {
+		return jiuLianBaoDentTypeNone
+	}
+	if !huWay.IsQingYiSe() {
+		return jiuLianBaoDentTypeNone
+	}
+	tileCount := [9]int{}
+	for _, t := range huWay.Hand.Tiles {
+		if t.IsZi() {
+			return jiuLianBaoDentTypeNone
+		}
+		tileCount[t.Number-1]++
+	}
+	if isPureJiuLianBaoDengHelper(&tileCount) {
+		return jiuLianBaoDentTypePure
+	}
+	tileCount[huWay.GotTile.Tile.Number-1]++
+	if tileCount[0] == 4 {
+		if tileCount[8] != 3 {
+			return jiuLianBaoDentTypeNone
+		}
+		if isTwoToEightAllOneHelper(&tileCount) {
+			return jiuLianBaoDentTypeNormal
+		}
+		return jiuLianBaoDentTypeNone
+	}
+	if tileCount[8] == 4 {
+		if tileCount[0] != 3 {
+			return jiuLianBaoDentTypeNone
+		}
+		if isTwoToEightAllOneHelper(&tileCount) {
+			return jiuLianBaoDentTypeNormal
+		}
+		return jiuLianBaoDentTypeNone
+	}
+	if tileCount[0] != 3 || tileCount[8] != 3 {
+		return jiuLianBaoDentTypeNone
+	}
+	tileCount[huWay.GotTile.Tile.Number-1]--
+	if isTwoToEightAllOneHelper(&tileCount) {
+		return jiuLianBaoDentTypeNormal
+	}
+	return jiuLianBaoDentTypeNone
+}
+
+func (j *JiuLianBaoDeng) IsYiZhong(huWay *ruleset.HuWay) bool {
+	return getJiuLianBaoDengType(huWay) == jiuLianBaoDentTypeNormal
+}
+
+// #endregion
+
+// #region chunjiulian
+
+type ChunJiuLian struct{}
+
+func (c *ChunJiuLian) GetId() string {
+	return IdChunJiuLian
+}
+
+func (c *ChunJiuLian) GetFan(_ *ruleset.HuWay) int {
+	return 13
+}
+
+func (c *ChunJiuLian) YakumanBaisu() int {
+	return 2
+}
+
+func (c *ChunJiuLian) GetName() string {
+	return "纯正九莲宝灯"
+}
+
+func (c *ChunJiuLian) NeedMenQing() bool {
+	return true
+}
+
+func (c *ChunJiuLian) GetDescription() string {
+	return "九莲宝灯听九面"
+}
+
+func (c *ChunJiuLian) IsYiZhong(huWay *ruleset.HuWay) bool {
+	return getJiuLianBaoDengType(huWay) == jiuLianBaoDentTypePure
 }
 
 // #endregion
