@@ -180,6 +180,9 @@ var (
 			&QingLaoTou{},
 			&JiuLianBaoDeng{},
 			&ChunJiuLian{},
+			&SiGangZi{},
+			&TianHu{},
+			&DiHu{},
 		},
 	}
 )
@@ -1730,6 +1733,108 @@ func (c *ChunJiuLian) GetDescription() string {
 
 func (c *ChunJiuLian) IsYiZhong(huWay *ruleset.HuWay) bool {
 	return getJiuLianBaoDengType(huWay) == jiuLianBaoDentTypePure
+}
+
+// #endregion
+
+// #region sigangzi
+
+type SiGangZi struct{}
+
+func (s *SiGangZi) GetId() string {
+	return IdSiGangZi
+}
+
+func (s *SiGangZi) GetFan(_ *ruleset.HuWay) int {
+	return 13
+}
+
+func (s *SiGangZi) YakumanBaisu() int {
+	return 1
+}
+
+func (s *SiGangZi) GetName() string {
+	return "四杠子"
+}
+
+func (s *SiGangZi) NeedMenQing() bool {
+	return false
+}
+
+func (s *SiGangZi) GetDescription() string {
+	return "由累计四个杠子（明杠和暗杠均可）和一对雀头组成"
+}
+
+func (s *SiGangZi) IsYiZhong(huWay *ruleset.HuWay) bool {
+	return huWay.Hand.GetGangCount() == 4
+}
+
+// #endregion
+
+// #region tianhu
+
+type TianHu struct{}
+
+func (t *TianHu) GetId() string {
+	return IdTianHu
+}
+
+func (t *TianHu) GetFan(_ *ruleset.HuWay) int {
+	return 13
+}
+
+func (t *TianHu) YakumanBaisu() int {
+	return 1
+}
+
+func (t *TianHu) GetName() string {
+	return "天和"
+}
+
+func (t *TianHu) NeedMenQing() bool {
+	return true
+}
+
+func (t *TianHu) GetDescription() string {
+	return "牌局开始时，庄家便自摸。如果是利用最初的14张牌开杠之后岭上开花的话则不成立"
+}
+
+func (t *TianHu) IsYiZhong(huWay *ruleset.HuWay) bool {
+	return huWay.Hand.Player.IsZhuangJia() && huWay.Hand.DrawNumber == 1 && huWay.IsZiMo() && !huWay.GotTile.IsLingShang
+}
+
+// #endregion
+
+// #region dihu
+
+type DiHu struct{}
+
+func (d *DiHu) GetId() string {
+	return IdDiHu
+}
+
+func (d *DiHu) GetFan(_ *ruleset.HuWay) int {
+	return 13
+}
+
+func (d *DiHu) YakumanBaisu() int {
+	return 1
+}
+
+func (d *DiHu) GetName() string {
+	return "地和"
+}
+
+func (d *DiHu) NeedMenQing() bool {
+	return true
+}
+
+func (d *DiHu) GetDescription() string {
+	return "牌局开始时，闲家第一巡便自摸。如果在第一次自摸之前有任意玩家鸣牌，则不成立"
+}
+
+func (d *DiHu) IsYiZhong(huWay *ruleset.HuWay) bool {
+	return !huWay.Hand.Player.IsZhuangJia() && !huWay.Hand.Game.HasMingPai && huWay.Hand.DrawNumber == 1 && huWay.IsZiMo() && !huWay.GotTile.IsLingShang
 }
 
 // #endregion

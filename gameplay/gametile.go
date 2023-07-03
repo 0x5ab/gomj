@@ -11,16 +11,15 @@ const (
 	GameTileInHand
 	GameTilePlayed
 	GameTileNotUsed
-	GameTileAsDora
-	GameTileAsUraDora
 )
 
 type GameTile struct {
-	IsLingShang bool // is this tile ling shang
-	IsLast      bool // is this last drawable tile
-	Tile        tiles.Tile
-	Player      *Player       // who played or is owning this tile, nil if it's a tile in the wall
-	state       GameTileState // state of this tile
+	IsLingShang      bool // is this tile ling shang
+	IsLast           bool // is this last drawable tile
+	Tile             tiles.Tile
+	Player           *Player       // who played or is owning this tile, nil if it's a tile in the wall
+	state            GameTileState // state of this tile
+	SpecialTileProps any           // any special rules
 }
 
 func (t *GameTile) State() GameTileState {

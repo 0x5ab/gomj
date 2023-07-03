@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/0x5ab/gomj/gameplay"
+	"github.com/0x5ab/gomj/gameplay/gameplay_jp"
 	"github.com/0x5ab/gomj/ruleset"
 	"github.com/0x5ab/gomj/ruleset/ruleset_jp"
 	"github.com/0x5ab/gomj/tiles"
@@ -52,9 +53,9 @@ func main() {
 		if cnt[tt.Id] >= 4 {
 			continue
 		}
-		tile := &gameplay.GameTile{Tile: tt, Player: player}
-		// tile := &gameplay.GameTile{Tile: tiles.Suo2, Player: player}
-		huway := ruleset.CanHu(ruleset_jp.JapaneseMahjongRuleset, hand, tile)
+		tile := gameplay_jp.NewJpMahjongGameTile(tt, player)
+		// tile := gameplay_jp.NewJpMahjongGameTile(tiles.Suo2, player)
+		huway := ruleset.CanHu(ruleset_jp.JapaneseMahjongRuleset, hand, (*gameplay.GameTile)(tile))
 		if !huway.IsValid() {
 			continue
 		}
